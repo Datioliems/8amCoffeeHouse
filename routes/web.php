@@ -43,6 +43,8 @@ Route::middleware(['auth.staff'])->group(function () {
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/',                      [OrderController::class, 'index']       )->name('index');
         Route::get('/api/list',              [OrderController::class, 'apiList']     )->name('api.list');
+        Route::get('/takeaway/create',       [OrderController::class, 'createTakeaway'])->name('takeaway.create');
+        Route::post('/takeaway',             [OrderController::class, 'storeTakeaway'])->name('takeaway.store');
         Route::get('/{ma_order}',            [OrderController::class, 'show']        )->name('show');
         Route::put('/{ma_order}/confirm',    [OrderController::class, 'confirm']     )->name('confirm');
         Route::put('/{ma_order}/status',     [OrderController::class, 'updateStatus'])->name('status');
@@ -65,6 +67,7 @@ Route::middleware(['auth.staff'])->group(function () {
     });
 
     Route::get('/ban',             [BanController::class, 'index']   )->name('ban.index');
+    Route::put('/ban/{ma_ban}',    [BanController::class, 'update']  )->name('ban.update');
     Route::get('/ban/{ma_ban}/qr', [QrController::class, 'generate'] )->name('ban.qr');
 
     Route::prefix('inventory')->name('inventory.')->group(function () {
@@ -77,6 +80,7 @@ Route::middleware(['auth.staff'])->group(function () {
         Route::resource('supplier',   SupplierController::class);
         Route::resource('stockcheck', StockCheckController::class);
         Route::put('/stockcheck/{id}/confirm', [StockCheckController::class,'confirm'])->name('stockcheck.confirm');
+        Route::put('/stockcheck/{id}/cancel',  [StockCheckController::class,'cancel'] )->name('stockcheck.cancel');
         Route::get('/report',        [ReportController::class, 'index'] )->name('report');
         Route::get('/report/export', [ReportController::class, 'export'])->name('report.export');
     });

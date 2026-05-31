@@ -92,7 +92,7 @@ return new class extends Migration
 
         Schema::create('ORDERS', function (Blueprint $table) {
             $table->string('ma_order', 20)->primary();
-            $table->string('ma_ban', 10);
+            $table->string('ma_ban', 10)->nullable();
             $table->string('ma_kh', 10)->nullable();
             $table->string('ma_chi_nhanh', 10);
             $table->string('trang_thai', 15)->default('cho_xac_nhan');
@@ -102,7 +102,7 @@ return new class extends Migration
             $table->index(['trang_thai', 'ma_chi_nhanh', 'ngay_order']);
             $table->index(['ma_ban', 'ngay_order']);
 
-            $table->foreign('ma_ban')->references('ma_ban')->on('BAN');
+            $table->foreign('ma_ban')->references('ma_ban')->on('BAN')->nullOnDelete();
             $table->foreign('ma_kh')->references('ma_kh')->on('KHACH_HANG')->nullOnDelete();
             $table->foreign('ma_chi_nhanh')->references('ma_chi_nhanh')->on('CHI_NHANH');
         });
@@ -265,7 +265,8 @@ return new class extends Migration
             AFTER UPDATE ON ORDERS
             FOR EACH ROW
             BEGIN
-                IF NEW.trang_thai = 'da_xac_nhan' AND OLD.trang_thai <> 'da_xac_nhan' THEN
+                IF NEW.trang_thai IN ('da_phuc_vu', 'hoan_thanh')
+                   AND OLD.trang_thai NOT IN ('da_phuc_vu', 'hoan_thanh') THEN
                     UPDATE TON_KHO tk
                     JOIN DINH_MUC dm ON dm.ma_nl = tk.ma_nl
                     JOIN CHI_TIET_ORDER cto ON cto.ma_mon = dm.ma_mon
@@ -394,7 +395,7 @@ return new class extends Migration
                 tk.nguong_canh_bao,
                 tk.hao_hut_cost,
                 CASE
-                    WHEN tk.sl_ton_kho_he_thong = 0 THEN 'HET_HANG'
+                    WHEN tk.sl_ton_kho_he_thong <= 0 THEN 'HET_HANG'
                     WHEN tk.sl_ton_kho_he_thong < tk.nguong_canh_bao THEN 'SAP_HET'
                     ELSE 'DU_HANG'
                 END AS trang_thai_kho

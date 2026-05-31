@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ban;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class BanController extends Controller
@@ -23,5 +24,22 @@ class BanController extends Controller
             ->pluck('cnt', 'ma_ban');
 
         return view('staff.ban-list', compact('bans', 'orderCounts'));
+    }
+
+    public function update(Request $request, string $maBan)
+    {
+        $ban = Ban::where('ma_chi_nhanh', session('ma_chi_nhanh'))
+            ->where('ma_ban', $maBan)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'so_ghe' => 'required|integer|min:1|max:20',
+            'vi_tri' => 'nullable|string|max:50',
+            'trang_thai' => 'required|in:trong,co_khach,dat_truoc,dong',
+        ]);
+
+        $ban->update($validated);
+
+        return back()->with('success', 'Đã cập nhật bàn '.$ban->so_ban.'.');
     }
 }

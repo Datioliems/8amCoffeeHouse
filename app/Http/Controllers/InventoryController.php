@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PhieuKiemKe;
+use App\Models\PhieuNhapKho;
 use App\Services\InventoryService;
 
 class InventoryController extends Controller
@@ -22,11 +24,30 @@ class InventoryController extends Controller
         ])->toArray();
 
         $totalMaterials = $stocks->count();
-        $outOfStock     = $stocks->where('sl_ton_kho_he_thong', 0)->count();
+        $outOfStock     = $stocks->filter(fn($s) => $s->sl_ton_kho_he_thong <= 0)->count();
         $lowStock       = $stocks->filter(fn($s) => $s->sl_ton_kho_he_thong > 0
                                 && $s->sl_ton_kho_he_thong < $s->nguong_canh_bao)->count();
 
-        return view('inventory.stock-overview', compact('items','totalMaterials','outOfStock','lowStock'));
+        $recentImports = PhieuNhapKho::with(['nhaCungCap', 'chiTietNhapKhos'])
+            ->where('ma_chi_nhanh', $maChiNhanh)
+            ->orderByDesc('ngay_nk')
+            ->limit(5)
+            ->get();
+
+        $recentChecks = PhieuKiemKe::with(['nhanVien', 'chiTietKiemKes'])
+            ->where('ma_chi_nhanh', $maChiNhanh)
+            ->orderByDesc('ngay_kk')
+            ->limit(5)
+            ->get();
+
+        return view('inventory.stock-overview', compact(
+            'items',
+            'totalMaterials',
+            'outOfStock',
+            'lowStock',
+            'recentImports',
+            'recentChecks',
+        ));
     }
 
     /** Danh sách nguyên liệu sắp hết */

@@ -45,6 +45,34 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $doanhThu7NgayRaw = DB::table('HOA_DON as hd')
+            ->join('ORDERS as o', 'o.ma_order', '=', 'hd.ma_order')
+            ->where('o.ma_chi_nhanh', $maChiNhanh)
+            ->whereRaw('CAST(hd.thoi_gian_lap AS DATE) >= ?', [now()->subDays(6)->toDateString()])
+            ->selectRaw('CAST(hd.thoi_gian_lap AS DATE) as ngay, SUM(hd.tong_tien_sau_ck) as doanh_thu')
+            ->groupBy('ngay')
+            ->pluck('doanh_thu', 'ngay');
+
+        $doanhThu7Ngay = collect(range(6, 0))->map(function ($daysAgo) use ($doanhThu7NgayRaw) {
+            $date = now()->subDays($daysAgo);
+            return [
+                'label' => $date->format('d/m'),
+                'value' => (float) ($doanhThu7NgayRaw[$date->toDateString()] ?? 0),
+            ];
+        });
+
+        $topMons = DB::table('CHI_TIET_ORDER as ct')
+            ->join('ORDERS as o', 'o.ma_order', '=', 'ct.ma_order')
+            ->join('MON as m', 'm.ma_mon', '=', 'ct.ma_mon')
+            ->where('o.ma_chi_nhanh', $maChiNhanh)
+            ->where('o.ngay_order', $today)
+            ->whereNotIn('o.trang_thai', ['da_huy', 'dang_chon'])
+            ->selectRaw('m.ten_mon, SUM(ct.so_luong) as so_luong')
+            ->groupBy('m.ten_mon')
+            ->orderByDesc('so_luong')
+            ->limit(5)
+            ->get();
+
         return view('staff.dashboard', compact(
             'orderHomNay',
             'orderChoXacNhan',
@@ -52,7 +80,9 @@ class DashboardController extends Controller
             'doanhThuHomNay',
             'banCoKhach',
             'tongBan',
-            'orderGanDay'
+            'orderGanDay',
+            'doanhThu7Ngay',
+            'topMons'
         ));
     }
 }

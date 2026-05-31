@@ -4,7 +4,7 @@ window.Alpine = Alpine;
 // ── Cart store dùng cho layout customer ──────────────────────
 document.addEventListener('alpine:init', () => {
     Alpine.data('cart', () => ({
-        items: JSON.parse(localStorage.getItem('cart_items') || '[]'),
+        items: [],
         openCart: false,
         showCustomizer: false,
         selectedMon: null,
@@ -19,6 +19,19 @@ document.addEventListener('alpine:init', () => {
         toastTimer: null,
         activeCategory: null,
         checkoutError: '',
+
+        init() {
+            this.items = JSON.parse(localStorage.getItem(this.cartKey) || '[]');
+            localStorage.removeItem('cart_items');
+        },
+
+        get currentOrder() {
+            return document.querySelector('meta[name="ma-order"]')?.content || '';
+        },
+
+        get cartKey() {
+            return this.currentOrder ? `cart_items_${this.currentOrder}` : 'cart_items_guest';
+        },
 
         get totalItems() {
             return this.items.reduce((sum, i) => sum + i.qty, 0);
@@ -183,7 +196,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         saveCart() {
-            localStorage.setItem('cart_items', JSON.stringify(this.items));
+            localStorage.setItem(this.cartKey, JSON.stringify(this.items));
         },
 
         formatPrice(price) {
@@ -225,7 +238,11 @@ document.addEventListener('alpine:init', () => {
                     });
 
                     if (!response.ok) {
-                        throw new Error('Không thể gửi món lên hệ thống.');
+                        const payload = await response.json().catch(() => null);
+                        const message = Object.values(payload?.errors || {})?.flat()?.[0]
+                            || payload?.message
+                            || 'Không thể gửi món lên hệ thống.';
+                        throw new Error(message);
                     }
                 }
 
@@ -238,7 +255,7 @@ document.addEventListener('alpine:init', () => {
 
         clearCart() {
             this.items = [];
-            localStorage.removeItem('cart_items');
+            localStorage.removeItem(this.cartKey);
         }
     }));
 });

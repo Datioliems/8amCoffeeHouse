@@ -14,7 +14,16 @@ class PaymentController extends Controller
     {
         $order = Order::with(['ban', 'chiTietOrders.mon'])->findOrFail($maOrder);
         $tongTien = $order->chiTietOrders->sum(fn($i) => $i->don_gia_tai_thoi_diem * $i->so_luong);
-        return view('staff.payment', compact('order', 'tongTien'));
+        $mergeTargets = Order::with('ban')
+            ->where('ma_chi_nhanh', $order->ma_chi_nhanh)
+            ->where('ma_order', '<>', $order->ma_order)
+            ->whereIn('trang_thai', ['cho_xac_nhan', 'da_xac_nhan', 'dang_pha_che', 'da_phuc_vu'])
+            ->orderByDesc('ngay_order')
+            ->orderByDesc('gio_order')
+            ->limit(30)
+            ->get();
+
+        return view('staff.payment', compact('order', 'tongTien', 'mergeTargets'));
     }
 
     public function process(Request $request, string $maOrder)

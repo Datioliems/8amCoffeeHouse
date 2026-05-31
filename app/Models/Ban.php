@@ -12,7 +12,7 @@ class Ban extends Model
     protected $keyType    = 'string';
     public $timestamps    = false;
 
-    protected $fillable = ['ma_ban','so_ban','vi_tri','trang_thai','ma_chi_nhanh'];
+    protected $fillable = ['ma_ban','so_ban','so_ghe','vi_tri','trang_thai','ma_chi_nhanh'];
 
     public function orders() { return $this->hasMany(Order::class, 'ma_ban', 'ma_ban'); }
 }

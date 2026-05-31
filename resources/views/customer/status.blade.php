@@ -8,9 +8,12 @@
         'cho_xac_nhan' => ['label' => 'Chờ xác nhận', 'copy' => 'Nhân viên sẽ nhận đơn trong giây lát.', 'icon' => '01'],
         'da_xac_nhan' => ['label' => 'Đã xác nhận', 'copy' => 'Đơn đã được chuyển tới quầy pha chế.', 'icon' => '02'],
         'dang_pha_che' => ['label' => 'Đang pha chế', 'copy' => 'Đồ uống của bạn đang được chuẩn bị.', 'icon' => '03'],
-        'da_phuc_vu' => ['label' => 'Đã phục vụ', 'copy' => 'Cảm ơn bạn đã ghé 8am.coffee.', 'icon' => '04'],
+        'da_phuc_vu' => ['label' => 'Đã phục vụ', 'copy' => 'Nhân viên đã phục vụ đơn. Vui lòng thanh toán tại quầy.', 'icon' => '04'],
+        'hoan_thanh' => ['label' => 'Đơn đã thanh toán', 'copy' => 'Cảm ơn bạn đã ghé 8am.coffee.', 'icon' => '05'],
     ];
-    $active = $steps[$order->trang_thai] ?? ['label' => 'Đơn đã hủy', 'copy' => 'Vui lòng liên hệ nhân viên để được hỗ trợ.', 'icon' => '!'];
+    $active = $order->trang_thai === 'dang_chon'
+        ? ['label' => 'Chưa gửi đơn', 'copy' => 'Bạn có thể quay lại thực đơn để chọn thêm món.', 'icon' => '...']
+        : ($steps[$order->trang_thai] ?? ['label' => 'Đơn đã hủy', 'copy' => 'Vui lòng liên hệ nhân viên để được hỗ trợ.', 'icon' => '!']);
     $keys = array_keys($steps);
     $currentIndex = array_search($order->trang_thai, $keys, true);
 @endphp
@@ -43,7 +46,21 @@
             @endforeach
         </div>
 
-        @if(!in_array($order->trang_thai, ['da_phuc_vu', 'hoan_thanh', 'da_huy']))
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            @if($order->trang_thai === 'dang_chon')
+                <a href="{{ route('customer.menu', ['ma_ban' => $order->ma_ban, 'ma_order' => $order->ma_order]) }}"
+                   class="rounded-full bg-[#E82C2A] px-5 py-2.5 text-sm font-semibold text-white">
+                    Quay lại thực đơn
+                </a>
+            @elseif($order->trang_thai === 'hoan_thanh')
+                <a href="{{ route('customer.scan', ['ma_ban' => $order->ma_ban]) }}"
+                   class="rounded-full bg-[#E82C2A] px-5 py-2.5 text-sm font-semibold text-white">
+                    Quay về thực đơn
+                </a>
+            @endif
+        </div>
+
+        @if(!in_array($order->trang_thai, ['hoan_thanh', 'da_huy']))
             <p class="mt-6 text-xs text-[#522C25]/55">Trang sẽ tự cập nhật sau 10 giây.</p>
             <meta http-equiv="refresh" content="10">
         @endif

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\StockCheckService;
-use App\Models\PhieuKiemKe;
 use App\Models\NguyenLieu;
+use App\Models\PhieuKiemKe;
+use App\Services\StockCheckService;
 use Illuminate\Http\Request;
 
 class StockCheckController extends Controller
@@ -17,13 +17,24 @@ class StockCheckController extends Controller
             ->where('ma_chi_nhanh', session('ma_chi_nhanh'))
             ->orderByDesc('ngay_kk')
             ->paginate(10);
+
         return view('inventory.stockcheck-list', compact('checks'));
     }
 
     public function create()
     {
         $nguyenLieus = NguyenLieu::orderBy('ten_nl')->get();
+
         return view('inventory.stockcheck-form', compact('nguyenLieus'));
+    }
+
+    public function show(string $id)
+    {
+        $check = PhieuKiemKe::with(['nhanVien', 'chiTietKiemKes.nguyenLieu'])
+            ->where('ma_chi_nhanh', session('ma_chi_nhanh'))
+            ->findOrFail($id);
+
+        return view('inventory.stockcheck-detail', compact('check'));
     }
 
     public function store(Request $request)
@@ -38,19 +49,26 @@ class StockCheckController extends Controller
 
         $this->service->createCheck(
             maChiNhanh: session('ma_chi_nhanh'),
-            maNv:       session('ma_nv'),
-            items:      $validated['items'],
-            ghiChu:     $validated['ghi_chu'] ?? null,
+            maNv: session('ma_nv'),
+            items: $validated['items'],
+            ghiChu: $validated['ghi_chu'] ?? null,
         );
 
         return redirect()->route('inventory.stockcheck.index')
-                         ->with('success', 'Tạo phiếu kiểm kê thành công.');
+            ->with('success', 'Tạo phiếu kiểm kê thành công.');
     }
 
-    /** Xác nhận kiểm kê → Trigger đồng bộ tồn thực tế + tính hao hụt */
     public function confirm(string $id)
     {
         $this->service->confirm($id);
+
         return back()->with('success', 'Đã xác nhận kiểm kê. Tồn kho thực tế đã được cập nhật.');
+    }
+
+    public function cancel(string $id)
+    {
+        $this->service->cancel($id);
+
+        return back()->with('success', 'Đã hủy phiếu kiểm kê.');
     }
 }

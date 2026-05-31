@@ -24,4 +24,5 @@ class Order extends Model
     public function chiNhanh()     { return $this->belongsTo(ChiNhanh::class, 'ma_chi_nhanh', 'ma_chi_nhanh'); }
     public function chiTietOrders(){ return $this->hasMany(ChiTietOrder::class, 'ma_order', 'ma_order'); }
     public function hoaDon()       { return $this->hasOne(HoaDon::class, 'ma_order', 'ma_order'); }
+    public function logs()         { return $this->hasMany(OrderLog::class, 'ma_order', 'ma_order'); }
 }

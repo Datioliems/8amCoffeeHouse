@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreOrderRequest;
 use App\Services\OrderService;
+use App\Models\Mon;
 use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -16,10 +17,11 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $status     = $request->get('status', 'cho_xac_nhan');
+        $allowedStatuses = ['cho_xac_nhan','da_xac_nhan','dang_pha_che','da_phuc_vu','hoan_thanh'];
+        $status     = in_array($request->get('status'), $allowedStatuses, true) ? $request->get('status') : 'cho_xac_nhan';
         $maChiNhanh = session('ma_chi_nhanh');
 
-        $orders = Order::with(['ban', 'chiTietOrders.mon', 'khachHang'])
+        $orders = Order::with(['ban', 'chiTietOrders.mon', 'khachHang', 'hoaDon'])
             ->where('ma_chi_nhanh', $maChiNhanh)
             ->where('trang_thai', $status)
             ->orderByDesc('ngay_order')
@@ -83,7 +85,58 @@ class OrderController extends Controller
     public function show(string $maOrder)
     {
         $order = Order::with(['ban', 'chiTietOrders.mon', 'khachHang'])->findOrFail($maOrder);
-        return view('staff.order-detail', compact('order'));
+        $mergeTargets = Order::with('ban')
+            ->where('ma_chi_nhanh', $order->ma_chi_nhanh)
+            ->where('ma_order', '<>', $order->ma_order)
+            ->whereIn('trang_thai', ['cho_xac_nhan', 'da_xac_nhan', 'dang_pha_che', 'da_phuc_vu'])
+            ->orderByDesc('ngay_order')
+            ->orderByDesc('gio_order')
+            ->limit(30)
+            ->get();
+
+        return view('staff.order-detail', compact('order', 'mergeTargets'));
+    }
+
+    public function createTakeaway()
+    {
+        $mons = Mon::with('danhMuc')
+            ->where('trang_thai', 'active')
+            ->orderBy('ma_danh_muc')
+            ->orderBy('ten_mon')
+            ->get();
+
+        return view('staff.order-takeaway', compact('mons'));
+    }
+
+    public function storeTakeaway(Request $request)
+    {
+        $validated = $request->validate([
+            'ten_kh' => 'nullable|string|max:100',
+            'sdt_kh' => 'nullable|string|max:15',
+            'items' => 'required|array',
+            'items.*.ma_mon' => 'nullable|exists:MON,ma_mon',
+            'items.*.so_luong' => 'nullable|integer|min:0|max:99',
+            'items.*.ghi_chu' => 'nullable|string|max:200',
+        ]);
+
+        $items = collect($validated['items'])
+            ->filter(fn($item) => !empty($item['ma_mon']) && (int) ($item['so_luong'] ?? 0) > 0)
+            ->values()
+            ->all();
+
+        if (empty($items)) {
+            return back()->withInput()->withErrors(['items' => 'Vui lòng chọn ít nhất một món.']);
+        }
+
+        $maOrder = $this->orderService->createTakeawayOrder(
+            tenKh: $validated['ten_kh'] ?? 'Khách mang về',
+            sdtKh: $validated['sdt_kh'] ?? null,
+            maChiNhanh: session('ma_chi_nhanh'),
+            items: $items,
+        );
+
+        return redirect()->route('payment.show', $maOrder)
+            ->with('success', 'Đã tạo đơn mang về. Có thể thanh toán ngay.');
     }
 
     public function merge(Request $request, string $maOrder)
@@ -174,8 +227,9 @@ class OrderController extends Controller
 
     public function confirmByCustomer(string $maOrder)
     {
-        $order = Order::where('ma_order', $maOrder)->where('trang_thai', 'cho_xac_nhan')->first();
+        $order = Order::where('ma_order', $maOrder)->where('trang_thai', 'dang_chon')->first();
         if (!$order) return redirect()->route('customer.status', $maOrder);
+        $this->orderService->submitByCustomer($maOrder);
         return redirect()->route('customer.status', $maOrder)
             ->with('info', 'Đơn hàng đã được gửi. Vui lòng chờ nhân viên xác nhận.');
     }

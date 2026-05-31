@@ -14,6 +14,33 @@ class Mon extends Model
 
     protected $fillable = ['ma_mon','ten_mon','don_gia','mo_ta','hinh_anh','ma_danh_muc','trang_thai'];
 
+    public function getImageUrlAttribute(): ?string
+    {
+        $fallbacks = [
+            'MON001'=>'espresso.jpg', 'MON002'=>'americano.jpg', 'MON003'=>'latte.jpg',
+            'MON004'=>'cam_em.jpg', 'MON005'=>'salted_caramel.jpg', 'MON006'=>'ca_phe_muoi.jpg',
+            'MON007'=>'ca_phe_trung.png', 'MON008'=>'lady_sweet.jpg', 'MON009'=>'ginger_latte.jpg',
+            'MON010'=>'v60.jpg', 'MON011'=>'origami.jpg', 'MON012'=>'cold_brew.jpg',
+            'MON013'=>'cold_brew_mo.png', 'MON014'=>'cold_brew.jpg', 'MON015'=>'tonic.jpg',
+            'MON016'=>'nhiet_doi.jpg', 'MON017'=>'ca_phe_den.webp', 'MON018'=>'ca_phe_nau.jpg',
+            'MON019'=>'bac_xiu.jpg', 'MON020'=>'sua_chua_ca_phe.jpg', 'MON021'=>'ca_cao.jpg',
+            'MON022'=>'chanh_xi_muoi.jpg', 'MON023'=>'chanh_leo.png', 'MON024'=>'tra_oi_hong.jpg',
+            'MON025'=>'tra_chanh_dao.jpg', 'MON026'=>'banh_sung_bo.jpg',
+            'MON027'=>'banh_sung_bo_socola.jpg', 'MON028'=>'hat_sen_say.jpg',
+        ];
+
+        $image = $this->hinh_anh ?: ($fallbacks[$this->ma_mon] ?? null);
+        if (!$image) {
+            return null;
+        }
+
+        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://') || str_starts_with($image, '/')) {
+            return $image;
+        }
+
+        return asset('images/' . ltrim($image, '/'));
+    }
+
     public function danhMuc()  { return $this->belongsTo(DanhMuc::class, 'ma_danh_muc', 'ma_danh_muc'); }
     public function dinhMucs() { return $this->hasMany(DinhMuc::class, 'ma_mon', 'ma_mon'); }
     public function options()  { return $this->hasMany(MonOption::class, 'ma_mon', 'ma_mon'); }

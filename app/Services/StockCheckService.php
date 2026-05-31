@@ -52,4 +52,11 @@ class StockCheckService
             $phieu->update(['trang_thai' => 'da_xac_nhan']);
         });
     }
+
+    public function cancel(string $maPkk): void
+    {
+        PhieuKiemKe::where('ma_pkk', $maPkk)
+            ->where('trang_thai', 'nhap')
+            ->update(['trang_thai' => 'da_huy']);
+    }
 }

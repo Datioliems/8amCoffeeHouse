@@ -16,6 +16,7 @@ DROP VIEW IF EXISTS `VW_TON_KHO_TONG_QUAN`;
 DROP VIEW IF EXISTS `VW_MENU_HIEN_THI`;
 DROP VIEW IF EXISTS `VW_ORDER_DASHBOARD`;
 
+DROP TABLE IF EXISTS `CHI_TIET_ORDER_OPTION`;
 DROP TABLE IF EXISTS `CHI_TIET_KIEM_KE`;
 DROP TABLE IF EXISTS `PHIEU_KIEM_KE`;
 DROP TABLE IF EXISTS `CHI_TIET_NHAP_KHO`;
@@ -24,9 +25,12 @@ DROP TABLE IF EXISTS `NHA_CUNG_CAP`;
 DROP TABLE IF EXISTS `TON_KHO`;
 DROP TABLE IF EXISTS `HOA_DON`;
 DROP TABLE IF EXISTS `CHI_TIET_ORDER`;
+DROP TABLE IF EXISTS `ORDER_LOGS`;
 DROP TABLE IF EXISTS `ORDERS`;
 DROP TABLE IF EXISTS `DINH_MUC`;
 DROP TABLE IF EXISTS `NGUYEN_LIEU`;
+DROP TABLE IF EXISTS `MON_OPTION`;
+DROP TABLE IF EXISTS `TOPPING`;
 DROP TABLE IF EXISTS `MON`;
 DROP TABLE IF EXISTS `DANH_MUC`;
 DROP TABLE IF EXISTS `KHACH_HANG`;
@@ -36,6 +40,13 @@ DROP TABLE IF EXISTS `NHAN_VIEN`;
 DROP TABLE IF EXISTS `CHI_NHANH`;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE `migrations` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `migration` VARCHAR(255) NOT NULL,
+    `batch` INT NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `CHI_NHANH` (
     `ma_chi_nhanh` VARCHAR(10) NOT NULL,
@@ -73,8 +84,9 @@ CREATE TABLE `TAI_KHOAN` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `BAN` (
-    `ma_ban` VARCHAR(10) NOT NULL,
+    `ma_ban` VARCHAR(10) NULL,
     `so_ban` INT UNSIGNED NOT NULL,
+    `so_ghe` TINYINT UNSIGNED NOT NULL DEFAULT 4,
     `vi_tri` VARCHAR(50) NULL,
     `trang_thai` VARCHAR(10) NOT NULL DEFAULT 'trong',
     `ma_chi_nhanh` VARCHAR(10) NOT NULL,
@@ -112,6 +124,30 @@ CREATE TABLE `MON` (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `TOPPING` (
+    `ma_topping` VARCHAR(10) NOT NULL,
+    `ten_topping` VARCHAR(100) NOT NULL,
+    `gia_them` DECIMAL(12,0) NOT NULL DEFAULT 0,
+    `canh_bao` VARCHAR(255) NULL,
+    `trang_thai` VARCHAR(10) NOT NULL DEFAULT 'active',
+    PRIMARY KEY (`ma_topping`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `MON_OPTION` (
+    `ma_option` VARCHAR(10) NOT NULL,
+    `ma_mon` VARCHAR(10) NULL,
+    `loai_option` VARCHAR(30) NOT NULL,
+    `ten_option` VARCHAR(100) NOT NULL,
+    `gia_them` DECIMAL(12,0) NOT NULL DEFAULT 0,
+    `bat_buoc` TINYINT(1) NOT NULL DEFAULT 0,
+    `thu_tu` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `trang_thai` VARCHAR(10) NOT NULL DEFAULT 'active',
+    PRIMARY KEY (`ma_option`),
+    KEY `mon_option_ma_mon_loai_option_trang_thai_index` (`ma_mon`, `loai_option`, `trang_thai`),
+    CONSTRAINT `fk_mon_option_mon` FOREIGN KEY (`ma_mon`) REFERENCES `MON` (`ma_mon`)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `NGUYEN_LIEU` (
     `ma_nl` VARCHAR(10) NOT NULL,
     `ten_nl` VARCHAR(100) NOT NULL,
@@ -144,9 +180,26 @@ CREATE TABLE `ORDERS` (
     PRIMARY KEY (`ma_order`),
     KEY `ix_orders_status_branch_date` (`trang_thai`, `ma_chi_nhanh`, `ngay_order`),
     KEY `ix_orders_ban_ngay` (`ma_ban`, `ngay_order`),
-    CONSTRAINT `fk_orders_ban` FOREIGN KEY (`ma_ban`) REFERENCES `BAN` (`ma_ban`),
+    CONSTRAINT `fk_orders_ban` FOREIGN KEY (`ma_ban`) REFERENCES `BAN` (`ma_ban`) ON DELETE SET NULL,
     CONSTRAINT `fk_orders_khach_hang` FOREIGN KEY (`ma_kh`) REFERENCES `KHACH_HANG` (`ma_kh`) ON DELETE SET NULL,
     CONSTRAINT `fk_orders_chi_nhanh` FOREIGN KEY (`ma_chi_nhanh`) REFERENCES `CHI_NHANH` (`ma_chi_nhanh`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `ORDER_LOGS` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `ma_order` VARCHAR(20) NOT NULL,
+    `hanh_dong` VARCHAR(50) NOT NULL,
+    `trang_thai_cu` VARCHAR(15) NULL,
+    `trang_thai_moi` VARCHAR(15) NULL,
+    `noi_dung` VARCHAR(500) NULL,
+    `du_lieu` JSON NULL,
+    `ma_nv` VARCHAR(10) NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `order_logs_ma_order_created_at_index` (`ma_order`, `created_at`),
+    KEY `order_logs_hanh_dong_created_at_index` (`hanh_dong`, `created_at`),
+    CONSTRAINT `fk_order_logs_orders` FOREIGN KEY (`ma_order`) REFERENCES `ORDERS` (`ma_order`)
+        ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `CHI_TIET_ORDER` (
@@ -159,6 +212,20 @@ CREATE TABLE `CHI_TIET_ORDER` (
     CONSTRAINT `fk_cto_orders` FOREIGN KEY (`ma_order`) REFERENCES `ORDERS` (`ma_order`)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT `fk_cto_mon` FOREIGN KEY (`ma_mon`) REFERENCES `MON` (`ma_mon`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `CHI_TIET_ORDER_OPTION` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `ma_order` VARCHAR(20) NOT NULL,
+    `ma_mon` VARCHAR(10) NOT NULL,
+    `loai_option` VARCHAR(30) NOT NULL,
+    `ten_lua_chon` VARCHAR(100) NOT NULL,
+    `gia_them` DECIMAL(12,0) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `chi_tiet_order_option_ma_order_ma_mon_index` (`ma_order`, `ma_mon`),
+    CONSTRAINT `fk_ctoo_chi_tiet_order` FOREIGN KEY (`ma_order`, `ma_mon`)
+        REFERENCES `CHI_TIET_ORDER` (`ma_order`, `ma_mon`)
+        ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `HOA_DON` (
@@ -264,7 +331,8 @@ CREATE TRIGGER `TRG_ORDER_TRU_TON_KHO`
 AFTER UPDATE ON `ORDERS`
 FOR EACH ROW
 BEGIN
-    IF NEW.trang_thai = 'da_xac_nhan' AND OLD.trang_thai <> 'da_xac_nhan' THEN
+        IF NEW.trang_thai IN ('da_phuc_vu', 'hoan_thanh')
+           AND OLD.trang_thai NOT IN ('da_phuc_vu', 'hoan_thanh') THEN
         UPDATE `TON_KHO` tk
         JOIN `DINH_MUC` dm ON dm.ma_nl = tk.ma_nl
         JOIN `CHI_TIET_ORDER` cto ON cto.ma_mon = dm.ma_mon
@@ -402,7 +470,7 @@ SELECT
     tk.nguong_canh_bao,
     tk.hao_hut_cost,
     CASE
-        WHEN tk.sl_ton_kho_he_thong = 0 THEN 'HET_HANG'
+        WHEN tk.sl_ton_kho_he_thong <= 0 THEN 'HET_HANG'
         WHEN tk.sl_ton_kho_he_thong < tk.nguong_canh_bao THEN 'SAP_HET'
         ELSE 'DU_HANG'
     END AS trang_thai_kho
@@ -474,17 +542,72 @@ INSERT INTO `DINH_MUC` VALUES
 ('MON004','NL006',30.00,'Kem béo'),
 ('MON005','NL001',18.00,'1 shot espresso'),
 ('MON005','NL003',150.00,'Sữa tươi'),
-('MON005','NL006',30.00,'Kem topping');
+('MON005','NL006',30.00,'Kem topping'),
+('MON006','NL001',18.00,'1 shot espresso'),
+('MON006','NL003',120.00,'Sữa tươi'),
+('MON006','NL004',20.00,'Sữa đặc'),
+('MON006','NL006',35.00,'Kem muối'),
+('MON007','NL001',18.00,'1 shot espresso'),
+('MON007','NL004',25.00,'Sữa đặc'),
+('MON007','NL006',40.00,'Kem trứng'),
+('MON008','NL001',30.00,'Cold brew coffee'),
+('MON008','NL006',40.00,'Kem mặn'),
+('MON008','NL024',25.00,'Mứt chanh leo tiramisu'),
+('MON009','NL001',18.00,'1 shot espresso'),
+('MON009','NL003',170.00,'Sữa tươi'),
+('MON009','NL009',5.00,'Bột gừng'),
+('MON010','NL001',20.00,'Cà phê hand brew'),
+('MON010','NL005',280.00,'Nước pha V60'),
+('MON011','NL001',20.00,'Cà phê hand brew'),
+('MON011','NL005',280.00,'Nước pha Origami'),
+('MON012','NL001',35.00,'Cà phê cold brew'),
+('MON012','NL005',220.00,'Nước ủ cold brew'),
+('MON013','NL001',35.00,'Cold brew'),
+('MON013','NL012',35.00,'Mứt mơ'),
+('MON014','NL001',35.00,'Cold brew'),
+('MON014','NL013',35.00,'Mứt me'),
+('MON015','NL001',35.00,'Cold brew'),
+('MON015','NL017',160.00,'Tonic water'),
+('MON016','NL001',35.00,'Cold brew'),
+('MON016','NL018',25.00,'Mứt đào'),
+('MON016','NL014',20.00,'Syrup dưa lưới'),
+('MON017','NL002',18.00,'Robusta espresso'),
+('MON017','NL005',30.00,'Nước pha espresso'),
+('MON018','NL002',18.00,'Robusta espresso'),
+('MON018','NL004',25.00,'Sữa đặc'),
+('MON019','NL002',18.00,'Robusta espresso'),
+('MON019','NL003',140.00,'Sữa tươi'),
+('MON019','NL004',25.00,'Sữa đặc'),
+('MON020','NL002',18.00,'Robusta espresso'),
+('MON020','NL020',120.00,'Sữa chua'),
+('MON020','NL004',20.00,'Sữa đặc'),
+('MON021','NL021',25.00,'Ca cao nguyên chất'),
+('MON021','NL003',160.00,'Sữa tươi'),
+('MON022','NL022',30.00,'Chanh tươi'),
+('MON022','NL023',20.00,'Xí muội'),
+('MON022','NL005',150.00,'Nước pha'),
+('MON023','NL019',45.00,'Chanh leo tươi'),
+('MON023','NL024',25.00,'Mứt chanh leo'),
+('MON023','NL006',30.00,'Kem béo'),
+('MON024','NL025',8.00,'Lục trà'),
+('MON024','NL026',35.00,'Mứt ổi'),
+('MON024','NL005',180.00,'Nước pha trà'),
+('MON025','NL025',8.00,'Lục trà'),
+('MON025','NL018',30.00,'Mứt đào'),
+('MON025','NL022',20.00,'Chanh tươi'),
+('MON026','NL028',1.00,'Bánh sừng bò plain'),
+('MON027','NL029',1.00,'Bánh sừng bò socola'),
+('MON028','NL030',50.00,'Hạt sen sấy');
 
-INSERT INTO `BAN` VALUES
-('B001',1,'Tầng 1 - Cửa sổ phố','trong','CN001'),
-('B002',2,'Tầng 1 - Giữa','trong','CN001'),
-('B003',3,'Tầng 1 - Góc trong','trong','CN001'),
-('B004',4,'Tầng 1 - Quầy bar','trong','CN001'),
-('B005',5,'Tầng 2 - Ban công ngoài','trong','CN001'),
-('B006',6,'Tầng 2 - Sofa góc','trong','CN001'),
-('B007',7,'Tầng 2 - Bàn dài','trong','CN001'),
-('B008',8,'Tầng 2 - Cạnh cầu thang','trong','CN001');
+INSERT INTO `BAN` (`ma_ban`, `so_ban`, `so_ghe`, `vi_tri`, `trang_thai`, `ma_chi_nhanh`) VALUES
+('B001',1,4,'Tầng 1 - Cửa sổ phố','trong','CN001'),
+('B002',2,4,'Tầng 1 - Giữa','trong','CN001'),
+('B003',3,4,'Tầng 1 - Góc trong','trong','CN001'),
+('B004',4,4,'Tầng 1 - Quầy bar','trong','CN001'),
+('B005',5,4,'Tầng 2 - Ban công ngoài','trong','CN001'),
+('B006',6,6,'Tầng 2 - Sofa góc','trong','CN001'),
+('B007',7,8,'Tầng 2 - Bàn dài','trong','CN001'),
+('B008',8,4,'Tầng 2 - Cạnh cầu thang','trong','CN001');
 
 INSERT INTO `TON_KHO` (`ma_chi_nhanh`, `ma_nl`, `sl_ton_kho_he_thong`, `sl_ton_kho_thuc_te`, `nguong_canh_bao`) VALUES
 ('CN001','NL001',5000.00,5000.00,500.00),
@@ -510,6 +633,15 @@ INSERT INTO `TAI_KHOAN` VALUES
 ('TK001','admin_8am','$2y$10$VgT3NEZK0qik2K/KwvvKqeusp9Dmv4KaxsKVD6XgQzOfDH24xbUWO','quan_ly','active','NV001'),
 ('TK002','bartender01','$2y$10$VgT3NEZK0qik2K/KwvvKqeusp9Dmv4KaxsKVD6XgQzOfDH24xbUWO','bartender','active','NV002'),
 ('TK003','staff01','$2y$10$VgT3NEZK0qik2K/KwvvKqeusp9Dmv4KaxsKVD6XgQzOfDH24xbUWO','nhan_vien','active','NV003');
+
+INSERT INTO `migrations` (`migration`, `batch`) VALUES
+('2026_05_27_000000_create_8am_coffee_mysql_schema', 1),
+('2026_05_31_000001_create_menu_option_tables', 2),
+('2026_05_31_000002_create_order_logs_table', 3),
+('2026_05_31_000003_add_so_ghe_to_ban_table', 4),
+('2026_05_31_000004_update_stock_status_view_out_of_stock', 5),
+('2026_05_31_000005_update_order_stock_deduct_trigger', 6),
+('2026_05_31_000006_allow_takeaway_orders_without_table', 7);
 
 -- ============================================================
 -- UPDATE hinh_anh — chạy sau khi import (ảnh để ở public/images/)
