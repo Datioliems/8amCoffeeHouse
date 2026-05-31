@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', '8AM Coffee - Backend')</title>
+    <title>@yield('title', '8AM Coffee - Quản trị')</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo8am.jpg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +18,7 @@
         <img src="{{ asset('images/logo8am.jpg') }}" alt="8AM Coffee" class="h-11 w-11 rounded-xl object-cover ring-1 ring-[#522C25]/10">
         <div>
             <p class="font-semibold leading-none">8am.coffee</p>
-            <p class="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#522C25]/60">business</p>
+            <p class="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#522C25]/60">quản trị</p>
         </div>
     </div>
 
@@ -49,7 +50,7 @@
     <div class="border-t border-[#522C25]/10 p-4">
         <div class="mb-3 rounded-2xl bg-[#F2F2F2] p-3">
             <p class="text-sm font-semibold">{{ session('ten_nv', 'Nhân viên') }}</p>
-            <p class="mt-1 text-xs text-[#522C25]/60">{{ session('chuc_vu', 'staff') }}</p>
+            <p class="mt-1 text-xs text-[#522C25]/60">{{ session('chuc_vu', 'nhân viên') }}</p>
         </div>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
@@ -66,8 +67,8 @@
             ☰
         </button>
         <div>
-            <p class="text-[11px] uppercase tracking-[0.18em] text-[#522C25]/60">8am operations</p>
-            <h1 class="mt-0.5 text-lg font-semibold">@yield('page-title', 'Dashboard')</h1>
+            <p class="text-[11px] uppercase tracking-[0.18em] text-[#522C25]/60">vận hành 8am</p>
+            <h1 class="mt-0.5 text-lg font-semibold">@yield('page-title', 'Bảng điều khiển')</h1>
         </div>
         <div class="ml-auto hidden items-center gap-3 md:flex">
             <span class="rounded-full bg-white px-3 py-1.5 text-xs text-[#522C25] ring-1 ring-[#522C25]/10">{{ now()->format('d/m/Y') }}</span>

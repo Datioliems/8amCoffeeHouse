@@ -57,8 +57,8 @@ document.addEventListener('alpine:init', () => {
                 options: this.buildOptions(mon),
             };
             this.selectedOptions = {
-                temperature: this.selectedMon.options.temperature[0] || 'Đá',
-                sweetness: this.selectedMon.options.sweetness[1] || this.selectedMon.options.sweetness[0] || '50%',
+                temperature: this.selectedMon.options.temperature[0] || '',
+                sweetness: this.selectedMon.options.sweetness[1] || this.selectedMon.options.sweetness[0] || '',
                 toppings: [],
                 note: '',
                 qty: 1,
@@ -72,15 +72,23 @@ document.addEventListener('alpine:init', () => {
         },
 
         buildOptions(mon) {
+            if (mon.options) {
+                return {
+                    temperature: mon.options.temperature || [],
+                    sweetness: mon.options.sweetness?.length ? mon.options.sweetness : ['0%', '30%', '50%', '70%', '100%'],
+                    toppings: mon.options.toppings || [],
+                };
+            }
+
             const text = `${mon.ten_mon || ''} ${mon.mo_ta || ''} ${mon.category || ''}`.toLowerCase();
-            const isFood = text.includes('bánh') || text.includes('hạt sen');
+            const isFood = text.includes('eats') || text.includes('bánh') || text.includes('hạt sen') || text.includes('đồ ăn');
             const isTea = text.includes('trà') || text.includes('chanh') || text.includes('ca cao');
             const isCoffee = text.includes('cà phê') || text.includes('coffee') || text.includes('espresso') || text.includes('latte') || text.includes('cold brew') || text.includes('americano');
 
             if (isFood) {
                 return {
-                    temperature: ['Thường', 'Làm nóng'],
-                    sweetness: ['Không áp dụng'],
+                    temperature: [],
+                    sweetness: [],
                     toppings: ['Kem mặn', 'Sốt caramel', 'Ăn kèm đá lạnh'],
                 };
             }
@@ -136,10 +144,10 @@ document.addEventListener('alpine:init', () => {
         get optionPayload() {
             if (!this.selectedMon) return [];
             const options = [];
-            if (this.selectedOptions.temperature) {
+            if (this.selectedOptions.temperature && this.selectedMon.options.temperature.includes(this.selectedOptions.temperature)) {
                 options.push({ type: 'temperature', label: 'Nhiệt độ', value: this.selectedOptions.temperature, price: 0 });
             }
-            if (this.selectedOptions.sweetness && this.selectedOptions.sweetness !== 'Không áp dụng') {
+            if (this.selectedOptions.sweetness && this.selectedMon.options.sweetness.includes(this.selectedOptions.sweetness)) {
                 options.push({ type: 'sweetness', label: 'Độ ngọt', value: this.selectedOptions.sweetness, price: 0 });
             }
             for (const topping of this.selectedOptions.toppings) {

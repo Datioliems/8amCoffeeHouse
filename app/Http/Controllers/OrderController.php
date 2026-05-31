@@ -19,7 +19,7 @@ class OrderController extends Controller
     {
         $allowedStatuses = ['cho_xac_nhan','da_xac_nhan','dang_pha_che','da_phuc_vu','hoan_thanh'];
         $status     = in_array($request->get('status'), $allowedStatuses, true) ? $request->get('status') : 'cho_xac_nhan';
-        $maChiNhanh = session('ma_chi_nhanh');
+        $maChiNhanh = (string) session('ma_chi_nhanh', '');
 
         $orders = Order::with(['ban', 'chiTietOrders.mon', 'khachHang', 'hoaDon'])
             ->where('ma_chi_nhanh', $maChiNhanh)
@@ -36,7 +36,7 @@ class OrderController extends Controller
     /** JSON polling cho order board — gọi bằng fetch mỗi 10s */
     public function apiList()
     {
-        $maChiNhanh = session('ma_chi_nhanh');
+        $maChiNhanh = (string) session('ma_chi_nhanh', '');
 
         $orders = Order::with(['ban', 'chiTietOrders.mon'])
             ->where('ma_chi_nhanh', $maChiNhanh)
@@ -62,17 +62,26 @@ class OrderController extends Controller
 
     public function confirm(string $maOrder)
     {
+        // Scope theo chi nhánh của staff đang đăng nhập
+        Order::where('ma_order', $maOrder)
+            ->where('ma_chi_nhanh', (string) session('ma_chi_nhanh', ''))
+            ->firstOrFail();
+
         $this->orderService->confirm($maOrder);
         if (request()->expectsJson()) return response()->json(['ok' => true]);
         return back()->with('success', 'Đã xác nhận đơn hàng.');
     }
 
-    /** FIX: cho phép tất cả trạng thái hợp lệ, trả JSON khi được yêu cầu */
     public function updateStatus(Request $request, string $maOrder)
     {
         $request->validate([
             'trang_thai' => 'required|in:da_xac_nhan,dang_pha_che,da_phuc_vu,hoan_thanh,da_huy',
         ]);
+
+        // Scope theo chi nhánh
+        Order::where('ma_order', $maOrder)
+            ->where('ma_chi_nhanh', (string) session('ma_chi_nhanh', ''))
+            ->firstOrFail();
 
         $this->orderService->updateStatus($maOrder, $request->trang_thai);
 
@@ -84,7 +93,12 @@ class OrderController extends Controller
 
     public function show(string $maOrder)
     {
-        $order = Order::with(['ban', 'chiTietOrders.mon', 'khachHang'])->findOrFail($maOrder);
+        // Scope theo chi nhánh — staff không xem đơn chi nhánh khác
+        $order = Order::with(['ban', 'chiTietOrders.mon', 'khachHang'])
+            ->where('ma_order', $maOrder)
+            ->where('ma_chi_nhanh', (string) session('ma_chi_nhanh', ''))
+            ->firstOrFail();
+
         $mergeTargets = Order::with('ban')
             ->where('ma_chi_nhanh', $order->ma_chi_nhanh)
             ->where('ma_order', '<>', $order->ma_order)
@@ -117,6 +131,7 @@ class OrderController extends Controller
             'items.*.ma_mon' => 'nullable|exists:MON,ma_mon',
             'items.*.so_luong' => 'nullable|integer|min:0|max:99',
             'items.*.ghi_chu' => 'nullable|string|max:200',
+            'items.*.options' => 'nullable|array|max:20',
         ]);
 
         $items = collect($validated['items'])
@@ -142,7 +157,18 @@ class OrderController extends Controller
     public function merge(Request $request, string $maOrder)
     {
         $request->validate(['target_order' => 'required|string']);
-        $this->orderService->merge($maOrder, $request->target_order);
+
+        // Scope: cả hai đơn phải thuộc chi nhánh đang đăng nhập
+        Order::where('ma_order', $maOrder)
+            ->where('ma_chi_nhanh', (string) session('ma_chi_nhanh', ''))
+            ->firstOrFail();
+
+        try {
+            $this->orderService->merge($maOrder, $request->target_order);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['merge' => $e->getMessage()]);
+        }
+
         return back()->with('success', 'Đã gộp đơn hàng.');
     }
 
@@ -169,27 +195,35 @@ class OrderController extends Controller
     {
         $result = $this->orderService->createOrder(
             maBan:      $maBan,
-            tenKh:      $request->ten_kh ?: 'Khách',
+            tenKh:      $request->ten_kh,
             sdtKh:      $request->sdt_kh,
             maChiNhanh: \App\Models\Ban::findOrFail($maBan)->ma_chi_nhanh,
         );
 
-        // JS fetch → JSON; form POST → redirect
+        $maOrder = (string) $result['ma_order'];
+
+        // Lưu ma_order vào session để xác thực quyền sở hữu ở các bước tiếp theo
+        $owned = (array) session('customer_orders', []);
+        $owned[] = $maOrder;
+        session()->put('customer_orders', $owned);
+
         if ($request->expectsJson()) {
             return response()->json([
-                'ma_order' => $result['ma_order'],
+                'ma_order' => $maOrder,
                 'ma_ban'   => $maBan,
             ]);
         }
 
         return redirect()->route('customer.menu', [
             'ma_ban'   => $maBan,
-            'ma_order' => $result['ma_order'],
+            'ma_order' => $maOrder,
         ]);
     }
 
     public function addItem(Request $request, string $maOrder)
     {
+        $this->assertCustomerOwnsOrder($maOrder);
+
         $request->validate([
             'ma_mon'   => 'required|string',
             'so_luong' => 'nullable|integer|min:1',
@@ -202,10 +236,10 @@ class OrderController extends Controller
         ]);
         $this->orderService->addItem(
             $maOrder,
-            $request->ma_mon,
-            $request->so_luong ?? 1,
-            $request->ghi_chu,
-            $request->input('options', [])
+            (string) $request->ma_mon,
+            (int) ($request->so_luong ?? 1),
+            $request->ghi_chu !== null ? (string) $request->ghi_chu : null,
+            (array) $request->input('options', [])
         );
 
         if ($request->expectsJson()) return response()->json(['ok' => true]);
@@ -214,6 +248,8 @@ class OrderController extends Controller
 
     public function removeItem(string $maOrder, string $maMon)
     {
+        $this->assertCustomerOwnsOrder($maOrder);
+
         $this->orderService->removeItem($maOrder, $maMon);
         if (request()->expectsJson()) return response()->json(['ok' => true]);
         return back();
@@ -221,12 +257,23 @@ class OrderController extends Controller
 
     public function showCart(string $maOrder)
     {
-        $order = Order::with(['ban', 'chiTietOrders.mon'])->findOrFail($maOrder);
+        $this->assertCustomerOwnsOrder($maOrder);
+
+        $order = Order::with(['ban', 'chiTietOrders.mon', 'chiTietOrders.options'])
+            ->findOrFail($maOrder);
+
+        // Redirect về trang trạng thái nếu đơn không còn ở trạng thái chọn món
+        if ($order->trang_thai !== 'dang_chon') {
+            return redirect()->route('customer.status', $maOrder);
+        }
+
         return view('customer.checkout', compact('order'));
     }
 
     public function confirmByCustomer(string $maOrder)
     {
+        $this->assertCustomerOwnsOrder($maOrder);
+
         $order = Order::where('ma_order', $maOrder)->where('trang_thai', 'dang_chon')->first();
         if (!$order) return redirect()->route('customer.status', $maOrder);
         $this->orderService->submitByCustomer($maOrder);
@@ -236,6 +283,8 @@ class OrderController extends Controller
 
     public function status(string $maOrder)
     {
+        $this->assertCustomerOwnsOrder($maOrder);
+
         $order = Order::findOrFail($maOrder);
         return view('customer.status', compact('order'));
     }
@@ -243,10 +292,23 @@ class OrderController extends Controller
     /** JSON polling cho trang trạng thái khách */
     public function statusJson(string $maOrder)
     {
+        $this->assertCustomerOwnsOrder($maOrder);
+
         $order = Order::findOrFail($maOrder);
         return response()->json([
             'ma_order'   => $order->ma_order,
             'trang_thai' => $order->trang_thai,
         ]);
+    }
+
+    /**
+     * Kiểm tra khách hàng có quyền thao tác với đơn hàng này không.
+     * ma_order phải được lưu trong session khi tạo đơn qua QR.
+     */
+    private function assertCustomerOwnsOrder(string $maOrder): void
+    {
+        if (!in_array($maOrder, session('customer_orders', []), true)) {
+            abort(403, 'Bạn không có quyền truy cập đơn hàng này.');
+        }
     }
 }

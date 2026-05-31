@@ -37,7 +37,7 @@
                                 <p class="mt-1 text-xs text-[#522C25]/55">{{ $item->ghi_chu }}</p>
                             @endif
                         </div>
-                        <p class="shrink-0 font-semibold text-[#522C25]">{{ number_format($item->don_gia_tai_thoi_diem * $item->so_luong, 0, ',', '.') }}đ</p>
+                        <p class="shrink-0 font-semibold text-[#522C25]">{{ number_format(($item->don_gia_tai_thoi_diem + $item->options->sum('gia_them')) * $item->so_luong, 0, ',', '.') }}đ</p>
                     </div>
 
                     @if($item->so_luong > 1)

@@ -15,6 +15,7 @@ class StockCheckService
 
             $phieu = PhieuKiemKe::create([
                 'ma_pkk'       => $maPkk,
+                'ngay_kk'      => now()->toDateString(),
                 'ma_chi_nhanh' => $maChiNhanh,
                 'ma_nv'        => $maNv,
                 'trang_thai'   => 'nhap',
@@ -45,10 +46,23 @@ class StockCheckService
     public function confirm(string $maPkk): void
     {
         DB::transaction(function () use ($maPkk) {
-            $phieu = PhieuKiemKe::where('ma_pkk', $maPkk)
+            $phieu = PhieuKiemKe::with('chiTietKiemKes')
+                                ->where('ma_pkk', $maPkk)
                                 ->where('trang_thai', 'nhap')
                                 ->lockForUpdate()
                                 ->firstOrFail();
+            foreach ($phieu->chiTietKiemKes as $detail) {
+                DB::table('TON_KHO')->updateOrInsert(
+                    [
+                        'ma_chi_nhanh' => $phieu->ma_chi_nhanh,
+                        'ma_nl' => $detail->ma_nl,
+                    ],
+                    [
+                        'sl_ton_kho_he_thong' => $detail->sl_thuc_te,
+                        'sl_ton_kho_thuc_te' => $detail->sl_thuc_te,
+                    ]
+                );
+            }
             $phieu->update(['trang_thai' => 'da_xac_nhan']);
         });
     }

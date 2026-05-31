@@ -4,7 +4,7 @@
 @section('page-title', isset($nhaCungCap) ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp')
 
 @section('content')
-<div class="max-w-lg">
+<div class="max-w-lg mx-auto">
     <form method="POST" action="{{ isset($nhaCungCap)
         ? route('inventory.supplier.update', $nhaCungCap->ma_ncc)
         : route('inventory.supplier.store') }}"

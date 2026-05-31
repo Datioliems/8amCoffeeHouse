@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\PaymentService;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
@@ -12,8 +13,17 @@ class PaymentController extends Controller
 
     public function show(string $maOrder)
     {
-        $order = Order::with(['ban', 'chiTietOrders.mon'])->findOrFail($maOrder);
-        $tongTien = $order->chiTietOrders->sum(fn($i) => $i->don_gia_tai_thoi_diem * $i->so_luong);
+        // Scope theo chi nhánh của staff đang đăng nhập
+        $order = Order::with(['ban', 'chiTietOrders.mon', 'chiTietOrders.options'])
+            ->where('ma_order', $maOrder)
+            ->where('ma_chi_nhanh', (string) session('ma_chi_nhanh', ''))
+            ->firstOrFail();
+
+        // Tổng tiền đã tính gộp phụ thu options
+        $tongTien = $order->chiTietOrders->sum(
+            fn($i) => ($i->don_gia_tai_thoi_diem + $i->options->sum('gia_them')) * $i->so_luong
+        );
+
         $mergeTargets = Order::with('ban')
             ->where('ma_chi_nhanh', $order->ma_chi_nhanh)
             ->where('ma_order', '<>', $order->ma_order)
@@ -28,17 +38,30 @@ class PaymentController extends Controller
 
     public function process(Request $request, string $maOrder)
     {
+        // Scope theo chi nhánh
+        Order::where('ma_order', $maOrder)
+            ->where('ma_chi_nhanh', (string) session('ma_chi_nhanh', ''))
+            ->firstOrFail();
+
         $request->validate([
             'chiet_khau'     => 'required|numeric|min:0|max:100',
             'phuong_thuc_tt' => 'required|in:tien_mat,chuyen_khoan,the,vi_dien_tu,momo,vnpay',
         ]);
 
-        $maHoaDon = $this->paymentService->createInvoice(
-            maOrder:      $maOrder,
-            chietKhau:    $request->chiet_khau,
-            phuongThuc:   $request->phuong_thuc_tt,
-            maNvThuNgan:  session('ma_nv'),
-        );
+        $chietKhau   = (float)  $request->input('chiet_khau', 0);
+        $phuongThuc  = (string) $request->input('phuong_thuc_tt', '');
+        $maNv        = (string) (session('ma_nv') ?? '');
+
+        try {
+            $maHoaDon = $this->paymentService->createInvoice(
+                maOrder:     $maOrder,
+                chietKhau:   $chietKhau,
+                phuongThuc:  $phuongThuc,
+                maNvThuNgan: $maNv,
+            );
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
 
         return redirect()->route('orders.index')
                          ->with('success', "Thanh toán thành công! Hóa đơn: {$maHoaDon}");

@@ -21,11 +21,12 @@ class ImportController extends Controller
         return view('inventory.import-list', compact('imports'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $nhaCungCaps = NhaCungCap::orderBy('ten_ncc')->get();
-        $nguyenLieus = NguyenLieu::orderBy('ten_nl')->get();
-        return view('inventory.import-form', compact('nhaCungCaps', 'nguyenLieus'));
+        $nhaCungCaps   = NhaCungCap::orderBy('ten_ncc')->get();
+        $nguyenLieus   = NguyenLieu::orderBy('ten_nl')->get();
+        $preselectedNl = (string) $request->query('nl', '');
+        return view('inventory.import-form', compact('nhaCungCaps', 'nguyenLieus', 'preselectedNl'));
     }
 
     public function store(Request $request)

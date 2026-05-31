@@ -10,6 +10,7 @@ class ChiTietOrderOption extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'chi_tiet_id',
         'ma_order',
         'ma_mon',
         'loai_option',

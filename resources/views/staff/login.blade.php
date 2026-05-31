@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - 8AM Coffee</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo8am.jpg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +18,7 @@
         <div class="relative flex h-full flex-col justify-between p-10">
             <img src="{{ asset('images/logo8am.jpg') }}" alt="8AM Coffee" class="h-16 w-16 rounded-2xl object-cover ring-1 ring-white/20">
             <div class="max-w-xl">
-                <p class="text-xs uppercase tracking-[0.2em] text-white/65">8am operations</p>
+                <p class="text-xs uppercase tracking-[0.2em] text-white/65">vận hành 8am</p>
                 <h1 class="mt-4 text-6xl font-semibold leading-none" style="font-family: Chivo, Inter, sans-serif;">Quản lý ca sáng rõ ràng hơn.</h1>
                 <p class="mt-5 text-base leading-7 text-white/75">Theo dõi đơn hàng, bàn, menu và kho hàng trong một giao diện dành cho vận hành quán.</p>
             </div>
@@ -28,7 +29,7 @@
         <div class="w-full max-w-md rounded-[2rem] bg-[#FCFAFA] p-7 ring-1 ring-[#522C25]/10 am-shadow md:p-9">
             <div class="mb-8">
                 <img src="{{ asset('images/logo8am.jpg') }}" alt="8AM Coffee" class="mb-5 h-14 w-14 rounded-2xl object-cover ring-1 ring-[#522C25]/10 lg:hidden">
-                <p class="text-xs uppercase tracking-[0.18em] text-[#522C25]/60">Backend doanh nghiệp</p>
+                <p class="text-xs uppercase tracking-[0.18em] text-[#522C25]/60">Quản trị doanh nghiệp</p>
                 <h1 class="mt-2 text-3xl font-semibold">Đăng nhập 8AM</h1>
                 <p class="mt-3 text-sm leading-6 text-[#522C25]/65">Dành cho nhân viên và quản lý chi nhánh.</p>
             </div>

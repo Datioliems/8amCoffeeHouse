@@ -2,51 +2,72 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PhieuKiemKe;
-use App\Models\PhieuNhapKho;
+use App\Models\NguyenLieu;
 use App\Services\InventoryService;
+use Illuminate\Http\Request;
 
 class InventoryController extends Controller
 {
     public function __construct(private InventoryService $inventoryService) {}
 
     /** Tổng quan tồn kho */
-    public function index()
+    public function index(Request $request)
     {
-        $maChiNhanh = session('ma_chi_nhanh');
-        $stocks = $this->inventoryService->getStockOverview($maChiNhanh);
+        $maChiNhanh  = (string) session('ma_chi_nhanh', '');
+        $keyword     = trim((string) $request->get('q', ''));
+        $stockStatus = $request->get('stock_status');
 
-        $items        = $stocks->map(fn($s) => [
-            'ten'    => $s->ten_nl,
-            'ton'    => $s->sl_ton_kho_he_thong,
-            'nguong' => $s->nguong_canh_bao,
-            'don_vi' => $s->don_vi,
-        ])->toArray();
+        // Dùng LEFT JOIN (load tất cả NL, kể cả chưa có bản ghi TON_KHO)
+        // để summary cards khớp với những gì bảng hiển thị.
+        $allMaterials = NguyenLieu::with(['tonKhos' => fn($q) => $q->where('ma_chi_nhanh', $maChiNhanh)])->get();
 
-        $totalMaterials = $stocks->count();
-        $outOfStock     = $stocks->filter(fn($s) => $s->sl_ton_kho_he_thong <= 0)->count();
-        $lowStock       = $stocks->filter(fn($s) => $s->sl_ton_kho_he_thong > 0
-                                && $s->sl_ton_kho_he_thong < $s->nguong_canh_bao)->count();
-
-        $recentImports = PhieuNhapKho::with(['nhaCungCap', 'chiTietNhapKhos'])
-            ->where('ma_chi_nhanh', $maChiNhanh)
-            ->orderByDesc('ngay_nk')
-            ->limit(5)
-            ->get();
-
-        $recentChecks = PhieuKiemKe::with(['nhanVien', 'chiTietKiemKes'])
-            ->where('ma_chi_nhanh', $maChiNhanh)
-            ->orderByDesc('ngay_kk')
-            ->limit(5)
-            ->get();
+        $totalMaterials = $allMaterials->count();
+        $outOfStock = $allMaterials->filter(function ($m) {
+            return ((float) ($m->tonKhos->first()?->sl_ton_kho_he_thong ?? 0)) <= 0;
+        })->count();
+        $lowStock = $allMaterials->filter(function ($m) {
+            $ton    = (float) ($m->tonKhos->first()?->sl_ton_kho_he_thong ?? 0);
+            $nguong = (float) ($m->tonKhos->first()?->nguong_canh_bao ?? 0);
+            return $ton > 0 && $nguong > 0 && $ton <= $nguong;  // khớp với logic trong view
+        })->count();
+        $materials = NguyenLieu::with(['tonKhos' => function ($query) use ($maChiNhanh) {
+                $query->where('ma_chi_nhanh', $maChiNhanh);
+            }])
+            ->when($keyword !== '', function ($query) use ($keyword) {
+                $query->where(function ($query) use ($keyword) {
+                    $query->where('ma_nl', 'like', "%{$keyword}%")
+                        ->orWhere('ten_nl', 'like', "%{$keyword}%")
+                        ->orWhere('don_vi', 'like', "%{$keyword}%");
+                });
+            })
+            ->when(in_array($stockStatus, ['out', 'low', 'ok'], true), function ($query) use ($stockStatus, $maChiNhanh) {
+                if ($stockStatus === 'out') {
+                    // Hết hàng = không có bản ghi TON_KHO, hoặc sl_ton_kho_he_thong <= 0
+                    $query->where(function ($q) use ($maChiNhanh) {
+                        $q->whereDoesntHave('tonKhos', fn($s) => $s->where('ma_chi_nhanh', $maChiNhanh))
+                          ->orWhereHas('tonKhos', fn($s) => $s->where('ma_chi_nhanh', $maChiNhanh)
+                              ->where('sl_ton_kho_he_thong', '<=', 0));
+                    });
+                } elseif ($stockStatus === 'low') {
+                    $query->whereHas('tonKhos', fn($q) => $q->where('ma_chi_nhanh', $maChiNhanh)
+                        ->where('sl_ton_kho_he_thong', '>', 0)
+                        ->whereColumn('sl_ton_kho_he_thong', '<=', 'nguong_canh_bao'));
+                } else {
+                    $query->whereHas('tonKhos', fn($q) => $q->where('ma_chi_nhanh', $maChiNhanh)
+                        ->whereColumn('sl_ton_kho_he_thong', '>', 'nguong_canh_bao'));
+                }
+            })
+            ->orderBy('ten_nl')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('inventory.stock-overview', compact(
-            'items',
             'totalMaterials',
             'outOfStock',
             'lowStock',
-            'recentImports',
-            'recentChecks',
+            'materials',
+            'keyword',
+            'stockStatus',
         ));
     }
 

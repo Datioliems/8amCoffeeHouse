@@ -85,7 +85,6 @@
                         <th class="px-5 py-3 text-right">SL hệ thống</th>
                         <th class="px-5 py-3 text-right">SL thực tế</th>
                         <th class="px-5 py-3 text-right">Chênh lệch</th>
-                        <th class="px-5 py-3 text-right">Đơn giá TB</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
@@ -100,7 +99,6 @@
                             <td class="px-5 py-3 text-right font-semibold {{ $diff < 0 ? 'text-red-600' : ($diff > 0 ? 'text-green-600' : 'text-gray-500') }}">
                                 {{ $diff > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($diff, 2, ',', '.'), '0'), ',') }}
                             </td>
-                            <td class="px-5 py-3 text-right text-gray-600">{{ $ct->don_gia_tb ? number_format($ct->don_gia_tb, 0, ',', '.') . 'đ' : '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

@@ -13,6 +13,12 @@
 @endphp
 
 <div class="max-w-7xl space-y-5">
+    @if($errors->any())
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
     <div class="rounded-[2rem] bg-white p-4 ring-1 ring-[#522C25]/10 am-shadow">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>

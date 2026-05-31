@@ -4,7 +4,7 @@
 @section('page-title', 'Tạo phiếu kiểm kê tồn kho')
 
 @section('content')
-<div class="max-w-3xl">
+<div class="max-w-3xl mx-auto">
     <form method="POST" action="{{ route('inventory.stockcheck.store') }}" class="space-y-5" x-data="{ rows: [{}] }">
         @csrf
 
@@ -29,7 +29,6 @@
                     <tr>
                         <th class="pb-2 text-left">Nguyên liệu</th>
                         <th class="pb-2 text-right">SL thực tế</th>
-                        <th class="pb-2 text-right">Đơn giá TB</th>
                         <th class="pb-2 w-10"></th>
                     </tr>
                 </thead>
@@ -48,11 +47,6 @@
                             <td class="py-2 pr-2">
                                 <input type="number" :name="`items[${index}][sl_thuc_te]`"
                                        min="0" step="0.01" required
-                                       class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-300">
-                            </td>
-                            <td class="py-2 pr-2">
-                                <input type="number" :name="`items[${index}][don_gia_tb]`"
-                                       min="0" placeholder="Tùy chọn"
                                        class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-300">
                             </td>
                             <td class="py-2 text-center">

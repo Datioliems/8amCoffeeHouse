@@ -59,10 +59,12 @@ Route::middleware(['auth.staff'])->group(function () {
 
     Route::middleware(['role:quan_ly'])->prefix('menu')->name('menu.')->group(function () {
         Route::get('/',              [MenuController::class, 'index']  )->name('index');
+        Route::get('/out-of-stock',  [MenuController::class, 'outOfStock'])->name('out-of-stock');
         Route::get('/create',        [MenuController::class, 'create'] )->name('create');
         Route::post('/',             [MenuController::class, 'store']  )->name('store');
         Route::get('/{ma_mon}/edit', [MenuController::class, 'edit']   )->name('edit');
         Route::put('/{ma_mon}',      [MenuController::class, 'update'] )->name('update');
+        Route::put('/{ma_mon}/restore', [MenuController::class, 'restore'])->name('restore');
         Route::delete('/{ma_mon}',   [MenuController::class, 'destroy'])->name('destroy');
     });
 
@@ -73,12 +75,13 @@ Route::middleware(['auth.staff'])->group(function () {
     Route::prefix('inventory')->name('inventory.')->group(function () {
         Route::get('/',      [InventoryController::class, 'index']   )->name('index');
         Route::get('/alert', [InventoryController::class, 'lowStock'])->name('alert');
-        Route::resource('materials',  NguyenLieuController::class);
-        Route::resource('import',     ImportController::class);
+        Route::resource('materials',  NguyenLieuController::class)->except(['show', 'index']);
+        Route::resource('import', ImportController::class)->only(['index', 'create', 'store', 'show']);
         Route::put('/import/{id}/approve',     [ImportController::class,    'approve'])->name('import.approve');
         Route::put('/import/{id}/cancel',      [ImportController::class,    'cancel'] )->name('import.cancel');
-        Route::resource('supplier',   SupplierController::class);
-        Route::resource('stockcheck', StockCheckController::class);
+        Route::post('/supplier/quick', [SupplierController::class, 'quickStore'])->name('supplier.quick');
+        Route::resource('supplier',   SupplierController::class)->except(['show']);
+        Route::resource('stockcheck', StockCheckController::class)->only(['index', 'create', 'store', 'show']);
         Route::put('/stockcheck/{id}/confirm', [StockCheckController::class,'confirm'])->name('stockcheck.confirm');
         Route::put('/stockcheck/{id}/cancel',  [StockCheckController::class,'cancel'] )->name('stockcheck.cancel');
         Route::get('/report',        [ReportController::class, 'index'] )->name('report');

@@ -10,7 +10,7 @@ class TonKho extends Model
     public $incrementing = false;
     public $timestamps   = false;
 
-    protected $primaryKey = ['ma_chi_nhanh','ma_nl'];
+    protected $primaryKey = null;
 
     protected $fillable = [
         'ma_chi_nhanh','ma_nl',

@@ -3,7 +3,7 @@
 
 @section('content')
 @php
-    $total = $order->chiTietOrders->sum(fn($i) => $i->don_gia_tai_thoi_diem * $i->so_luong);
+    $total = $order->chiTietOrders->sum(fn($i) => ($i->don_gia_tai_thoi_diem + $i->options->sum('gia_them')) * $i->so_luong);
 @endphp
 
 <div class="mx-auto max-w-2xl">
@@ -31,7 +31,7 @@
                     <p class="mt-1 text-xs text-[#522C25]/60">Số lượng: {{ $item->so_luong }}</p>
                 </div>
                 <p class="am-mono shrink-0 font-bold text-[#E82C2A]">
-                    {{ number_format($item->don_gia_tai_thoi_diem * $item->so_luong, 0, ',', '.') }}đ
+                    {{ number_format(($item->don_gia_tai_thoi_diem + $item->options->sum('gia_them')) * $item->so_luong, 0, ',', '.') }}đ
                 </p>
             </div>
             @endforeach

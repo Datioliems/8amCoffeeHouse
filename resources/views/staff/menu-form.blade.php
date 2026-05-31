@@ -9,6 +9,15 @@
     $previewUrl = $oldImage
         ? (str_starts_with($oldImage, 'http') || str_starts_with($oldImage, '/') ? $oldImage : asset('images/' . $oldImage))
         : ($mon->image_url ?? null);
+    $selectedTemperatures = old('temperature_options', isset($mon)
+        ? $mon->options->where('loai_option', 'temperature')->where('trang_thai', 'active')->pluck('ten_option')->all()
+        : ['Đá', 'Nóng', 'Ít đá']);
+    $selectedToppings = old('topping_options', isset($mon)
+        ? $mon->options->where('loai_option', 'topping')->where('trang_thai', 'active')->pluck('ten_option')->all()
+        : []);
+    $selectedSweetness = old('sweetness_options', isset($mon)
+        ? $mon->options->where('loai_option', 'sweetness')->where('trang_thai', 'active')->pluck('ten_option')->all()
+        : $sweetnessOptions ?? []);
 @endphp
 
 <div class="max-w-6xl">
@@ -22,15 +31,6 @@
         @endif
 
         <div class="h-full space-y-4 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-            @if(!isset($mon))
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">Mã món</label>
-                <input type="text" name="ma_mon" value="{{ old('ma_mon') }}" placeholder="VD: MON031"
-                       class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
-                @error('ma_mon') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
-            @endif
-
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Tên món</label>
                 <input type="text" name="ten_mon" value="{{ old('ten_mon', $mon->ten_mon ?? '') }}"
@@ -68,13 +68,7 @@
                 @error('mo_ta') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
             </div>
 
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">Đường dẫn hình ảnh</label>
-                <input type="text" name="hinh_anh" id="hinh_anh" value="{{ old('hinh_anh', $mon->hinh_anh ?? '') }}"
-                       placeholder="VD: latte.jpg hoặc menu/latte-moi.jpg"
-                       class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
-                @error('hinh_anh') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-            </div>
+            <input type="hidden" name="hinh_anh" id="hinh_anh" value="{{ old('hinh_anh', $mon->hinh_anh ?? '') }}">
 
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Tải ảnh mới</label>
@@ -82,6 +76,52 @@
                        class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-amber-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-amber-700 hover:file:bg-amber-100">
                 <p class="mt-1 text-xs text-gray-400">JPG, PNG hoặc WebP tối đa 4MB. Khi upload, hệ thống sẽ lưu vào public/images/menu.</p>
                 @error('hinh_anh_file') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p class="text-sm font-semibold text-gray-800">Tùy chọn hiển thị cho khách</p>
+                <div class="mt-4">
+                    <p class="mb-2 text-xs font-semibold uppercase text-gray-500">Nhiệt độ</p>
+                    <div class="grid grid-cols-2 gap-2 md:grid-cols-3">
+                        @foreach($temperatureOptions as $option)
+                            <label class="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">
+                                <input type="checkbox" name="temperature_options[]" value="{{ $option }}"
+                                       class="rounded border-gray-300 text-amber-500 focus:ring-amber-300"
+                                       {{ in_array($option, $selectedTemperatures, true) ? 'checked' : '' }}>
+                                <span>{{ $option }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="mb-2 text-xs font-semibold uppercase text-gray-500">Độ ngọt</p>
+                    <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
+                        @foreach($sweetnessOptions as $option)
+                            <label class="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">
+                                <input type="checkbox" name="sweetness_options[]" value="{{ $option }}"
+                                       class="rounded border-gray-300 text-amber-500 focus:ring-amber-300"
+                                       {{ in_array($option, $selectedSweetness, true) ? 'checked' : '' }}>
+                                <span>{{ $option }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="mb-2 text-xs font-semibold uppercase text-gray-500">Topping thêm</p>
+                    <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+                        @foreach($toppings as $topping)
+                            <label class="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">
+                                <span class="flex items-center gap-2">
+                                    <input type="checkbox" name="topping_options[]" value="{{ $topping->ma_topping }}"
+                                           class="rounded border-gray-300 text-amber-500 focus:ring-amber-300"
+                                           {{ in_array($topping->ten_topping, $selectedToppings, true) || in_array($topping->ma_topping, $selectedToppings, true) ? 'checked' : '' }}>
+                                    <span>{{ $topping->ten_topping }}</span>
+                                </span>
+                                <span class="text-xs text-gray-400">{{ number_format($topping->gia_them, 0, ',', '.') }}đ</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
             </div>
 
             <div>
@@ -97,26 +137,20 @@
                 @error('trang_thai') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
             </div>
 
-            <div class="flex gap-3 pt-2">
-                <button type="submit" class="rounded-lg bg-amber-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-amber-600">
-                    {{ isset($mon) ? 'Cập nhật' : 'Thêm mới' }}
-                </button>
-                <a href="{{ route('menu.index') }}" class="px-5 py-2 text-sm text-gray-500 hover:text-gray-700">Hủy</a>
-            </div>
         </div>
 
         <aside class="flex h-full flex-col rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
             <p class="mb-3 text-sm font-medium text-gray-700">Ảnh thực đơn</p>
             <div class="min-h-80 flex-1 overflow-hidden rounded-xl bg-stone-100">
                 @if($previewUrl)
-                    <img id="image-preview" src="{{ $previewUrl }}" alt="{{ $mon->ten_mon ?? 'Preview' }}" class="h-full w-full object-cover">
+                    <img id="image-preview" src="{{ $previewUrl }}" alt="{{ $mon->ten_mon ?? 'Xem trước' }}" class="h-full w-full object-cover">
                     <div id="image-empty" class="hidden h-full w-full items-center justify-center text-sm text-stone-400">Chưa có ảnh</div>
                 @else
                     <div id="image-empty" class="flex h-full w-full items-center justify-center text-sm text-stone-400">Chưa có ảnh</div>
-                    <img id="image-preview" src="" alt="Preview" class="hidden h-full w-full object-cover">
+                    <img id="image-preview" src="" alt="Xem trước" class="hidden h-full w-full object-cover">
                 @endif
             </div>
-            <p class="mt-3 break-all text-xs text-gray-400" id="image-path">{{ old('hinh_anh', $mon->hinh_anh ?? 'Chưa có đường dẫn') }}</p>
+            <p class="mt-3 break-all text-xs text-gray-400" id="image-path">{{ $previewUrl ? 'Đang dùng ảnh thực đơn' : 'Chưa có ảnh' }}</p>
         </aside>
 
         <section class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm lg:col-span-2">
@@ -191,6 +225,13 @@
                 </table>
             </div>
         </section>
+
+        <div class="flex items-center gap-3 lg:col-span-2">
+            <button type="submit" class="rounded-lg bg-amber-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-amber-600">
+                {{ isset($mon) ? 'Cập nhật' : 'Thêm mới' }}
+            </button>
+            <a href="{{ route('menu.index') }}" class="px-5 py-2 text-sm text-gray-500 hover:text-gray-700">Hủy</a>
+        </div>
     </form>
 </div>
 

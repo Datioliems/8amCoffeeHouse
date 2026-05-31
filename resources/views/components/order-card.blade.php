@@ -3,7 +3,7 @@
     <div class="flex items-start justify-between">
         <div>
             <p class="text-xs uppercase tracking-[0.18em] text-[#522C25]/50">{{ $order->ban ? 'Bàn ' . $order->ban->so_ban : 'Mang về' }}</p>
-            <p class="mt-1 text-xl font-semibold text-[#1A1A1A]">{{ $order->gio_order->format('H:i') }}</p>
+            <p class="mt-1 text-xl font-semibold text-[#1A1A1A]">{{ $order->gio_order ? \Carbon\Carbon::parse($order->gio_order)->format('H:i') : '--:--' }}</p>
             <p class="mt-1 font-mono text-xs text-[#522C25]/60">{{ $order->ma_order }}</p>
         </div>
         <x-order-status-badge :status="$order->trang_thai" />

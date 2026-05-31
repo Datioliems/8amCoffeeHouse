@@ -16,7 +16,7 @@ class Order extends Model
 
     protected $casts = [
         'ngay_order' => 'date',
-        'gio_order'  => 'datetime:H:i',
+        'gio_order'  => 'string',
     ];
 
     public function ban()          { return $this->belongsTo(Ban::class, 'ma_ban', 'ma_ban'); }

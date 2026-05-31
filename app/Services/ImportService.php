@@ -22,7 +22,17 @@ class ImportService
                 'ghi_chu'      => $ghiChu,
             ]);
 
-            foreach ($items as $item) {
+            $mergedItems = collect($items)
+                ->groupBy('ma_nl')
+                ->map(fn($group) => [
+                    'ma_nl'    => $group->first()['ma_nl'],
+                    'so_luong' => $group->sum('so_luong'),
+                    'don_gia'  => $group->last()['don_gia'],
+                ])
+                ->values()
+                ->all();
+
+            foreach ($mergedItems as $item) {
                 ChiTietNhapKho::create([
                     'ma_pnk'    => $maPnk,
                     'ma_nl'     => $item['ma_nl'],

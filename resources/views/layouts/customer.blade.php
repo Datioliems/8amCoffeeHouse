@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', '8AM Coffee - Đặt món')</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo8am.jpg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@500;600;700&family=EB+Garamond:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,7 +22,7 @@
             </span>
             <div>
                 <p class="am-headline font-semibold leading-none text-[#1A1A1A]">8am.coffee</p>
-                <p class="am-mono mt-1 text-[10px] uppercase tracking-[0.16em] text-[#522C25]/60">morning bar</p>
+                <p class="am-mono mt-1 text-[10px] uppercase tracking-[0.16em] text-[#522C25]/60">quầy sáng</p>
             </div>
         </a>
         <button @click="openCart = true" class="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#1A1A1A] text-white shadow-sm transition active:scale-95" aria-label="Mở giỏ hàng">
@@ -58,7 +59,7 @@
                     <img src="{{ asset('images/logo8am-brand.png') }}" alt="8AM Coffee" class="h-7 w-7 rounded-full object-cover">
                     <span class="am-headline text-2xl font-semibold">8am.cafe</span>
                 </div>
-                <span class="am-mono rounded-full bg-[#E82C2A] px-4 py-2 text-xs font-bold tracking-[0.14em] text-white">Table</span>
+                <span class="am-mono rounded-full bg-[#E82C2A] px-4 py-2 text-xs font-bold tracking-[0.14em] text-white">Bàn</span>
             </header>
 
             <div class="px-5 py-5">
@@ -81,10 +82,10 @@
                     </template>
                 </div>
 
-                <section class="mt-10">
+                <section class="mt-10" x-show="selectedMon.options.temperature.length">
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="am-headline text-3xl font-semibold">Nhiệt độ</h3>
-                        <span class="am-mono text-xs tracking-[0.16em] text-[#E82C2A]">Required</span>
+                        <span class="am-mono text-xs tracking-[0.16em] text-[#E82C2A]">Bắt buộc</span>
                     </div>
                     <div class="grid grid-cols-3 gap-3">
                         <template x-for="option in selectedMon.options.temperature" :key="option">
@@ -106,7 +107,7 @@
                     </div>
                 </section>
 
-                <section class="mt-10">
+                <section class="mt-10" x-show="selectedMon.options.toppings.length">
                     <h3 class="am-headline mb-4 text-3xl font-semibold">Topping thêm</h3>
                     <div class="grid grid-cols-2 gap-3">
                         <template x-for="option in selectedMon.options.toppings" :key="option">
@@ -118,15 +119,15 @@
                 </section>
 
                 <section class="mt-10">
-                    <h3 class="am-headline mb-4 text-3xl font-semibold">Special Instructions</h3>
+                    <h3 class="am-headline mb-4 text-3xl font-semibold">Ghi chú thêm</h3>
                     <textarea x-model="selectedOptions.note"
                               class="w-full rounded-[1.6rem] border-0 bg-[#F2F2F2] px-5 py-5 text-base text-[#1A1A1A] placeholder:text-[#5D3F3C]/50 focus:ring-2 focus:ring-[#E82C2A]"
                               rows="4"
-                              placeholder="E.g., extra hot, light foam..."></textarea>
+                              placeholder="VD: nóng hơn, ít bọt..."></textarea>
                 </section>
 
                 <section class="mt-8 flex items-center justify-between rounded-[1.6rem] bg-[#F2F2F2] p-5">
-                    <h3 class="am-headline text-2xl font-semibold">Quantity</h3>
+                    <h3 class="am-headline text-2xl font-semibold">Số lượng</h3>
                     <div class="flex items-center gap-5 rounded-full bg-white px-5 py-3 shadow-sm">
                         <button @click="selectedOptions.qty = Math.max(1, selectedOptions.qty - 1)" class="text-2xl">−</button>
                         <span class="am-mono text-lg font-bold" x-text="selectedOptions.qty"></span>
@@ -138,11 +139,11 @@
             <footer class="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md rounded-t-[1.6rem] bg-[#E82C2A] px-5 py-4 text-white">
                 <div class="flex items-center justify-between gap-4">
                     <div>
-                        <p class="am-mono text-xs">Total Price</p>
+                        <p class="am-mono text-xs">Tổng tiền</p>
                         <p class="am-mono text-2xl font-bold" x-text="formatPrice(selectedMon.don_gia * selectedOptions.qty)"></p>
                     </div>
                     <button @click="addCustomizedToCart()" class="am-headline rounded-full bg-white px-8 py-4 text-xl font-semibold text-[#E82C2A] shadow">
-                        Add to Cart
+                        Thêm vào giỏ
                     </button>
                 </div>
             </footer>

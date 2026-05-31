@@ -11,9 +11,11 @@
         'da_phuc_vu' => ['label' => 'Đã phục vụ', 'copy' => 'Nhân viên đã phục vụ đơn. Vui lòng thanh toán tại quầy.', 'icon' => '04'],
         'hoan_thanh' => ['label' => 'Đơn đã thanh toán', 'copy' => 'Cảm ơn bạn đã ghé 8am.coffee.', 'icon' => '05'],
     ];
-    $active = $order->trang_thai === 'dang_chon'
-        ? ['label' => 'Chưa gửi đơn', 'copy' => 'Bạn có thể quay lại thực đơn để chọn thêm món.', 'icon' => '...']
-        : ($steps[$order->trang_thai] ?? ['label' => 'Đơn đã hủy', 'copy' => 'Vui lòng liên hệ nhân viên để được hỗ trợ.', 'icon' => '!']);
+    $active = match($order->trang_thai) {
+        'dang_chon' => ['label' => 'Chưa gửi đơn', 'copy' => 'Bạn có thể quay lại thực đơn để chọn thêm món.', 'icon' => '...'],
+        'da_huy' => ['label' => 'Đơn đã hủy', 'copy' => 'Đơn này đã hủy. Bạn có thể quay lại để gọi món khác.', 'icon' => '!'],
+        default => $steps[$order->trang_thai] ?? ['label' => 'Đơn đã hủy', 'copy' => 'Bạn có thể quay lại để gọi món khác.', 'icon' => '!'],
+    };
     $keys = array_keys($steps);
     $currentIndex = array_search($order->trang_thai, $keys, true);
 @endphp
@@ -33,18 +35,20 @@
         <h1 class="am-display mt-2 text-5xl leading-none text-[#1A1A1A]">{{ $active['label'] }}</h1>
         <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#522C25]/65">{{ $active['copy'] }}</p>
 
-        <div class="mt-8 space-y-3 text-left">
-            @foreach($steps as $status => $step)
-                @php
-                    $idx = array_search($status, $keys, true);
-                    $done = $currentIndex !== false && $idx <= $currentIndex;
-                @endphp
-                <div class="flex items-center gap-3 rounded-2xl {{ $done ? 'bg-[#1A1A1A] text-white' : 'bg-[#F6F3F2] text-[#522C25]/60' }} px-4 py-3">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-full {{ $done ? 'bg-white/15' : 'bg-white' }} text-xs font-bold">{{ $step['icon'] }}</span>
-                    <span class="am-headline text-sm font-semibold">{{ $step['label'] }}</span>
-                </div>
-            @endforeach
-        </div>
+        @if($order->trang_thai !== 'da_huy')
+            <div class="mt-8 space-y-3 text-left">
+                @foreach($steps as $status => $step)
+                    @php
+                        $idx = array_search($status, $keys, true);
+                        $done = $currentIndex !== false && $idx <= $currentIndex;
+                    @endphp
+                    <div class="flex items-center gap-3 rounded-2xl {{ $done ? 'bg-[#1A1A1A] text-white' : 'bg-[#F6F3F2] text-[#522C25]/60' }} px-4 py-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-full {{ $done ? 'bg-white/15' : 'bg-white' }} text-xs font-bold">{{ $step['icon'] }}</span>
+                        <span class="am-headline text-sm font-semibold">{{ $step['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             @if($order->trang_thai === 'dang_chon')
@@ -52,10 +56,10 @@
                    class="rounded-full bg-[#E82C2A] px-5 py-2.5 text-sm font-semibold text-white">
                     Quay lại thực đơn
                 </a>
-            @elseif($order->trang_thai === 'hoan_thanh')
+            @elseif($order->trang_thai === 'hoan_thanh' || $order->trang_thai === 'da_huy')
                 <a href="{{ route('customer.scan', ['ma_ban' => $order->ma_ban]) }}"
                    class="rounded-full bg-[#E82C2A] px-5 py-2.5 text-sm font-semibold text-white">
-                    Quay về thực đơn
+                    Gọi món khác
                 </a>
             @endif
         </div>

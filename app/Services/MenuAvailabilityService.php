@@ -26,7 +26,7 @@ class MenuAvailabilityService
 
                 $available = (float) ($stock?->sl_ton_kho_he_thong ?? 0);
 
-                return $available <= 0 || $available < $required;
+                return $available < ($required - 0.0001);
             })
             ->map(fn($dinhMuc) => $dinhMuc->nguyenLieu?->ten_nl ?? $dinhMuc->ma_nl)
             ->filter()

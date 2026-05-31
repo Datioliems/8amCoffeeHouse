@@ -18,10 +18,10 @@
                     <span class="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold backdrop-blur">
                         Bàn {{ str_pad($ban->so_ban, 2, '0', STR_PAD_LEFT) }} · {{ $ban->vi_tri }}
                     </span>
-                    <span class="rounded-full bg-[#E82C2A] px-4 py-2 text-xs font-semibold">Order mới</span>
+                    <span class="rounded-full bg-[#E82C2A] px-4 py-2 text-xs font-semibold">Đơn mới</span>
                 </div>
                 <div>
-                    <p class="mb-3 text-xs uppercase tracking-[0.2em] text-white/70">8am morning bar</p>
+                    <p class="mb-3 text-xs uppercase tracking-[0.2em] text-white/70">quầy sáng 8am</p>
                     <h1 class="am-display max-w-xl text-5xl leading-none md:text-7xl">Chào buổi sáng!</h1>
                     <p class="mt-4 max-w-md text-sm leading-6 text-white/80 md:text-base">Chọn món tại bàn, nhân viên xác nhận ngay trên hệ thống. Ảnh món dùng từ thư viện hiện có của quán.</p>
                 </div>
@@ -35,7 +35,7 @@
                 <p class="am-mono text-xs uppercase tracking-[0.16em] text-[#522C25]/60">Sơ đồ quán</p>
                 <h2 class="am-headline mt-1 text-xl font-semibold">Khu bàn hôm nay</h2>
             </div>
-            <span class="rounded-full bg-[#CADCAC]/70 px-3 py-1.5 text-xs font-semibold text-[#3D4C27]">3D ready</span>
+            <span class="rounded-full bg-[#CADCAC]/70 px-3 py-1.5 text-xs font-semibold text-[#3D4C27]">Sẵn sàng 3D</span>
         </div>
         <div class="am-store-stage h-64 overflow-hidden rounded-3xl bg-[#F2F2F2]">
             <div class="am-store-floor relative mx-auto mt-6 h-72 w-72 rounded-[2rem] border border-[#522C25]/10">

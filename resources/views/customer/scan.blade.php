@@ -15,19 +15,21 @@
                 <p class="am-mono mb-3 text-xs uppercase tracking-[0.18em] text-[#522C25]/55">
                     Bàn {{ str_pad($ban->so_ban, 2, '0', STR_PAD_LEFT) }} · {{ $ban->vi_tri }}
                 </p>
-                <h1 class="am-display text-5xl leading-none text-[#522C25]">Good morning.</h1>
-                <p class="mt-3 text-base leading-7 text-[#5D3F3C]">Let's craft your perfect cup.</p>
+                <h1 class="am-display text-5xl leading-none text-[#522C25]">Chào buổi sáng.</h1>
+                <p class="mt-3 text-base leading-7 text-[#5D3F3C]">Cùng chọn ly cà phê hợp gu của bạn.</p>
             </div>
 
             <form method="POST" action="{{ route('customer.create', $ban->ma_ban) }}" class="w-full space-y-3">
                 @csrf
-                <input type="text" name="ten_kh" placeholder="Enter your name"
+                <input type="text" name="ten_kh" placeholder="Nhập tên của bạn" required value="{{ old('ten_kh') }}"
                        class="am-mono w-full rounded-3xl border-0 bg-[#F2F2F2] px-6 py-4 text-center text-sm text-[#1A1A1A] placeholder:text-[#5D3F3C]/45 focus:ring-2 focus:ring-[#E82C2A]">
-                <input type="text" name="sdt_kh" placeholder="Phone number"
+                @error('ten_kh') <p class="text-center text-xs text-[#BB0011]">{{ $message }}</p> @enderror
+                <input type="text" name="sdt_kh" placeholder="Số điện thoại" value="{{ old('sdt_kh') }}"
                        class="am-mono w-full rounded-3xl border-0 bg-[#F2F2F2] px-6 py-4 text-center text-sm text-[#1A1A1A] placeholder:text-[#5D3F3C]/45 focus:ring-2 focus:ring-[#E82C2A]">
+                @error('sdt_kh') <p class="text-center text-xs text-[#BB0011]">{{ $message }}</p> @enderror
                 <button type="submit"
                         class="am-headline flex w-full items-center justify-center gap-3 rounded-full bg-[#E82C2A] px-6 py-4 text-xl font-semibold text-white shadow-lg transition hover:bg-[#BB0011] active:scale-95">
-                    <span>Start Ordering</span>
+                    <span>Bắt đầu gọi món</span>
                     <span aria-hidden="true">→</span>
                 </button>
             </form>

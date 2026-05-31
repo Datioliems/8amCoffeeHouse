@@ -1,222 +1,134 @@
 @extends('layouts.app')
-@section('page-title', 'Tổng quan tồn kho')
+@section('page-title', 'Tồn kho')
 
 @section('content')
 @php
     $healthyStock = max(0, $totalMaterials - $outOfStock - $lowStock);
-    $stockRate = $totalMaterials > 0 ? round(($healthyStock / $totalMaterials) * 100) : 0;
 @endphp
 
 <div class="max-w-7xl space-y-6">
-    <section class="rounded-[2rem] bg-[#1A1A1A] p-5 text-white shadow-[0_24px_70px_rgba(26,26,26,0.18)] sm:p-6">
-        <div class="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+    <section class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Inventory control</p>
-                <h2 class="mt-2 text-2xl font-semibold sm:text-3xl">Tồn kho nguyên liệu</h2>
-                <p class="mt-2 max-w-2xl text-sm text-white/65">
-                    Theo dõi mức tồn hiện tại, tạo phiếu nhập và kiểm kê nguyên liệu từ cùng một màn hình.
-                </p>
+                <h2 class="text-2xl font-semibold text-[#1A1A1A]">Tồn kho nguyên liệu</h2>
+                <p class="mt-1 text-sm text-[#522C25]/60">Theo dõi số lượng, tìm kiếm và lọc trạng thái nguyên liệu ngay tại đây.</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('inventory.materials.create') }}"
-                   class="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#1A1A1A] transition hover:bg-[#FFF7E8]">
-                    Thêm nguyên liệu mới
-                </a>
-                <a href="{{ route('inventory.import.create') }}"
-                   class="rounded-xl bg-[#8B5A2B] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6F4621]">
-                    Tạo phiếu nhập
-                </a>
-                <a href="{{ route('inventory.stockcheck.create') }}"
-                   class="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/15 transition hover:bg-white/15">
-                    Tạo phiếu kiểm kê
-                </a>
+                <a href="{{ route('inventory.materials.create') }}" class="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600">Thêm nguyên liệu</a>
+                <a href="{{ route('inventory.import.create') }}" class="rounded-xl bg-[#1A1A1A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#522C25]">Tạo phiếu nhập</a>
+                <a href="{{ route('inventory.stockcheck.create') }}" class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#522C25] ring-1 ring-[#522C25]/15 transition hover:bg-[#FAF7F2]">Kiểm kê</a>
             </div>
         </div>
     </section>
 
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10 transition hover:-translate-y-0.5 hover:shadow-lg">
+    <section class="grid gap-4 md:grid-cols-4">
+        <div class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10">
             <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[#522C25]/45">Nguyên liệu</p>
             <p class="mt-3 text-3xl font-bold text-[#1A1A1A]">{{ $totalMaterials }}</p>
-            <p class="mt-1 text-sm text-[#522C25]/60">Đang liên kết dữ liệu kho</p>
         </div>
-        <div class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10 transition hover:-translate-y-0.5 hover:shadow-lg">
-            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[#522C25]/45">Ổn định</p>
+        <div class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[#522C25]/45">Đủ hàng</p>
             <p class="mt-3 text-3xl font-bold text-emerald-600">{{ $healthyStock }}</p>
-            <p class="mt-1 text-sm text-[#522C25]/60">{{ $stockRate }}% nguyên liệu đủ dùng</p>
         </div>
-        <a href="{{ route('inventory.alert') }}" class="rounded-2xl bg-[#FFF7E8] p-5 ring-1 ring-[#E8C37D]/50 transition hover:-translate-y-0.5 hover:shadow-lg">
-            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[#8B5A2B]/70">Sắp hết</p>
-            <p class="mt-3 text-3xl font-bold text-[#8B5A2B]">{{ $lowStock }}</p>
-            <p class="mt-1 text-sm text-[#8B5A2B]/75">Cần lên kế hoạch nhập</p>
-        </a>
-        <div class="rounded-2xl bg-red-50 p-5 ring-1 ring-red-100 transition hover:-translate-y-0.5 hover:shadow-lg">
-            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-red-500/70">Hết hàng</p>
+        <div class="rounded-2xl bg-amber-50 p-5 ring-1 ring-amber-100">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Sắp hết</p>
+            <p class="mt-3 text-3xl font-bold text-amber-700">{{ $lowStock }}</p>
+        </div>
+        <div class="rounded-2xl bg-red-50 p-5 ring-1 ring-red-100">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-red-500">Hết hàng</p>
             <p class="mt-3 text-3xl font-bold text-red-600">{{ $outOfStock }}</p>
-            <p class="mt-1 text-sm text-red-500/75">Cần xử lý ngay</p>
         </div>
     </section>
 
-    <section class="grid gap-5 lg:grid-cols-2">
-        <div class="overflow-hidden rounded-[2rem] bg-white ring-1 ring-[#522C25]/10">
-            <div class="flex items-center justify-between border-b border-[#522C25]/10 p-5">
+    <section class="rounded-2xl bg-white ring-1 ring-[#522C25]/10">
+        <div class="border-b border-[#522C25]/10 p-5">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#8B5A2B]/70">Import history</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[#1A1A1A]">Lịch sử nhập kho</h3>
+                    <h3 class="text-lg font-semibold text-[#1A1A1A]">Dữ liệu nguyên liệu</h3>
+                    <p class="mt-1 text-sm text-[#522C25]/60">Hiển thị tối đa 10 nguyên liệu mỗi trang.</p>
                 </div>
-                <a href="{{ route('inventory.import.index') }}" class="text-sm font-semibold text-[#8B5A2B] hover:text-[#6F4621]">Xem tất cả</a>
+                <form method="GET" action="{{ route('inventory.index') }}" class="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_160px_auto]">
+                    <input type="search" name="q" value="{{ $keyword }}" placeholder="Tìm mã, tên hoặc đơn vị"
+                           class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+                    <select name="stock_status" class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="ok" {{ $stockStatus === 'ok' ? 'selected' : '' }}>Đủ hàng</option>
+                        <option value="low" {{ $stockStatus === 'low' ? 'selected' : '' }}>Sắp hết</option>
+                        <option value="out" {{ $stockStatus === 'out' ? 'selected' : '' }}>Hết hàng</option>
+                    </select>
+                    <button class="rounded-lg bg-[#1A1A1A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#522C25]">Lọc</button>
+                </form>
             </div>
-            <div class="divide-y divide-[#522C25]/10">
-                @forelse($recentImports as $import)
-                    @php
-                        $statusClass = match($import->trang_thai) {
-                            'cho_duyet' => 'bg-amber-100 text-amber-700',
-                            'da_duyet' => 'bg-green-100 text-green-700',
-                            'da_huy' => 'bg-red-100 text-red-700',
-                            default => 'bg-gray-100 text-gray-600',
-                        };
-                        $statusLabel = ['cho_duyet' => 'Chờ duyệt', 'da_duyet' => 'Đã duyệt', 'da_huy' => 'Đã hủy'][$import->trang_thai] ?? $import->trang_thai;
-                    @endphp
-                    <a href="{{ route('inventory.import.show', $import->ma_pnk) }}" class="grid gap-3 p-4 transition hover:bg-[#FAF7F2] sm:grid-cols-[1fr_auto] sm:items-center">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <p class="font-mono text-sm font-semibold text-[#1A1A1A]">{{ $import->ma_pnk }}</p>
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
-                            </div>
-                            <p class="mt-1 truncate text-sm text-[#522C25]/60">
-                                {{ $import->nhaCungCap->ten_ncc ?? 'Nhà cung cấp' }} · {{ $import->chiTietNhapKhos->count() }} nguyên liệu · {{ $import->ngay_nk }}
-                            </p>
-                        </div>
-                        <p class="text-left text-sm font-bold text-[#8B5A2B] sm:text-right">{{ number_format($import->tong_gia_tri ?? 0, 0, ',', '.') }}đ</p>
-                    </a>
-                @empty
-                    <div class="p-8 text-center text-sm text-[#522C25]/55">Chưa có phiếu nhập kho.</div>
-                @endforelse
-            </div>
+            @if($keyword !== '' || $stockStatus)
+                <a href="{{ route('inventory.index') }}" class="mt-3 inline-block text-sm font-semibold text-[#8B5A2B] hover:text-[#522C25]">Xóa bộ lọc</a>
+            @endif
         </div>
 
-        <div class="overflow-hidden rounded-[2rem] bg-white ring-1 ring-[#522C25]/10">
-            <div class="flex items-center justify-between border-b border-[#522C25]/10 p-5">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#8B5A2B]/70">Stock check</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[#1A1A1A]">Lịch sử kiểm kê</h3>
-                </div>
-                <a href="{{ route('inventory.stockcheck.index') }}" class="text-sm font-semibold text-[#8B5A2B] hover:text-[#6F4621]">Xem tất cả</a>
-            </div>
-            <div class="divide-y divide-[#522C25]/10">
-                @forelse($recentChecks as $check)
-                    @php
-                        $statusClass = match($check->trang_thai) {
-                            'nhap' => 'bg-gray-100 text-gray-600',
-                            'da_xac_nhan' => 'bg-green-100 text-green-700',
-                            'da_huy' => 'bg-red-100 text-red-700',
-                            default => 'bg-gray-100 text-gray-600',
-                        };
-                        $statusLabel = ['nhap' => 'Nháp', 'da_xac_nhan' => 'Đã xác nhận', 'da_huy' => 'Đã hủy'][$check->trang_thai] ?? $check->trang_thai;
-                    @endphp
-                    <a href="{{ route('inventory.stockcheck.show', $check->ma_pkk) }}" class="grid gap-3 p-4 transition hover:bg-[#FAF7F2] sm:grid-cols-[1fr_auto] sm:items-center">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <p class="font-mono text-sm font-semibold text-[#1A1A1A]">{{ $check->ma_pkk }}</p>
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
-                            </div>
-                            <p class="mt-1 truncate text-sm text-[#522C25]/60">
-                                {{ $check->nhanVien->ten_nv ?? 'Nhân viên' }} · {{ $check->chiTietKiemKes->count() }} nguyên liệu · {{ $check->ngay_kk }}
-                            </p>
-                        </div>
-                        <span class="text-sm font-semibold text-[#8B5A2B]">Chi tiết</span>
-                    </a>
-                @empty
-                    <div class="p-8 text-center text-sm text-[#522C25]/55">Chưa có phiếu kiểm kê.</div>
-                @endforelse
-            </div>
-        </div>
-    </section>
-
-    <section class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div class="overflow-hidden rounded-[2rem] bg-white ring-1 ring-[#522C25]/10">
-            <div class="flex flex-col gap-2 border-b border-[#522C25]/10 p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#8B5A2B]/70">Stock levels</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[#1A1A1A]">Mức tồn hiện tại</h3>
-                </div>
-                <a href="{{ route('inventory.materials.index') }}" class="text-sm font-semibold text-[#8B5A2B] hover:text-[#6F4621]">
-                    Xem dữ liệu nguyên liệu
-                </a>
-            </div>
-
-            <div class="divide-y divide-[#522C25]/10">
-                @forelse($items as $item)
-                    @php
-                        $ton = (float) ($item['ton'] ?? 0);
-                        $nguong = (float) ($item['nguong'] ?? 0);
-                        $percent = $nguong > 0 ? min(100, round(($ton / $nguong) * 100)) : ($ton > 0 ? 100 : 0);
-                        $status = $ton <= 0 ? 'Hết hàng' : ($nguong > 0 && $ton <= $nguong ? 'Sắp hết' : 'Đủ hàng');
-                        $statusClass = $status === 'Hết hàng'
-                            ? 'bg-red-50 text-red-600'
-                            : ($status === 'Sắp hết' ? 'bg-[#FFF7E8] text-[#8B5A2B]' : 'bg-emerald-50 text-emerald-600');
-                        $barClass = $status === 'Hết hàng'
-                            ? 'bg-red-500'
-                            : ($status === 'Sắp hết' ? 'bg-[#D7952A]' : 'bg-emerald-500');
-                    @endphp
-                    <div class="grid gap-3 p-4 transition hover:bg-[#FAF7F2] md:grid-cols-[1fr_160px] md:items-center">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <p class="truncate font-semibold text-[#1A1A1A]">{{ $item['ten'] }}</p>
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ $status }}</span>
-                            </div>
-                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-[#EFE7DD]">
-                                <div class="h-full rounded-full {{ $barClass }} transition-all duration-500" style="width: {{ $percent }}%"></div>
-                            </div>
-                            <p class="mt-2 text-xs text-[#522C25]/55">Ngưỡng cảnh báo: {{ rtrim(rtrim(number_format($nguong, 2, ',', '.'), '0'), ',') }} {{ $item['don_vi'] }}</p>
-                        </div>
-                        <div class="rounded-xl bg-[#FAF7F2] px-4 py-3 text-left md:text-right">
-                            <p class="text-xs font-medium text-[#522C25]/55">Tồn hiện tại</p>
-                            <p class="mt-1 text-xl font-bold text-[#522C25]">{{ rtrim(rtrim(number_format($ton, 2, ',', '.'), '0'), ',') }} {{ $item['don_vi'] }}</p>
-                        </div>
-                    </div>
-                @empty
-                    <div class="py-16 text-center text-sm text-[#522C25]/55">
-                        Chưa có dữ liệu nguyên liệu. Hãy thêm nguyên liệu mới để bắt đầu quản lý tồn kho.
-                    </div>
-                @endforelse
-            </div>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[860px] text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-5 py-3 text-left">Mã NL</th>
+                        <th class="px-5 py-3 text-left">Tên nguyên liệu</th>
+                        <th class="px-5 py-3 text-left">Đơn vị</th>
+                        <th class="px-5 py-3 text-right">Số lượng</th>
+                        <th class="px-5 py-3 text-left">Mức tồn</th>
+                        <th class="px-5 py-3 text-right">Ngưỡng cảnh báo</th>
+                        <th class="px-5 py-3 text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($materials as $material)
+                        @php
+                            $stock = $material->tonKhos->first();
+                            $ton = (float) ($stock?->sl_ton_kho_he_thong ?? 0);
+                            $nguong = (float) ($stock?->nguong_canh_bao ?? 0);
+                            $percent = $nguong > 0 ? min(100, round(($ton / $nguong) * 100)) : ($ton > 0 ? 100 : 0);
+                            $status = $ton <= 0 ? 'Hết hàng' : ($nguong > 0 && $ton <= $nguong ? 'Sắp hết' : 'Đủ hàng');
+                            $statusClass = $status === 'Hết hàng'
+                                ? 'bg-red-50 text-red-600'
+                                : ($status === 'Sắp hết' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700');
+                            $barClass = $status === 'Hết hàng'
+                                ? 'bg-red-500'
+                                : ($status === 'Sắp hết' ? 'bg-amber-500' : 'bg-emerald-500');
+                        @endphp
+                        <tr class="hover:bg-[#FAF7F2]">
+                            <td class="px-5 py-3 font-mono text-gray-500">{{ $material->ma_nl }}</td>
+                            <td class="px-5 py-3 font-semibold text-gray-900">{{ $material->ten_nl }}</td>
+                            <td class="px-5 py-3 text-gray-500">{{ $material->don_vi }}</td>
+                            <td class="px-5 py-3 text-right font-semibold text-[#522C25]">{{ rtrim(rtrim(number_format($ton, 2, ',', '.'), '0'), ',') }}</td>
+                            <td class="px-5 py-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-20 rounded-full px-2 py-1 text-center text-xs font-semibold {{ $statusClass }}">{{ $status }}</span>
+                                    <div class="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                                        <div class="h-full rounded-full {{ $barClass }}" style="width: {{ $percent }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-5 py-3 text-right text-gray-500">{{ rtrim(rtrim(number_format($nguong, 2, ',', '.'), '0'), ',') }}</td>
+                            <td class="px-5 py-3 text-right">
+                                <div class="flex items-center justify-end gap-3">
+                                    @if($status === 'Hết hàng')
+                                        <a href="{{ route('inventory.import.create', ['nl' => $material->ma_nl]) }}"
+                                           class="text-sm font-semibold text-emerald-600 hover:underline">Nhập</a>
+                                    @endif
+                                    <a href="{{ route('inventory.materials.edit', $material->ma_nl) }}"
+                                       class="text-sm font-semibold text-amber-600 hover:underline">Sửa</a>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-5 py-12 text-center text-gray-400">Không có nguyên liệu phù hợp.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
 
-        <aside class="space-y-4">
-            <div class="rounded-[2rem] bg-white p-5 ring-1 ring-[#522C25]/10">
-                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#8B5A2B]/70">Quick actions</p>
-                <h3 class="mt-1 text-lg font-semibold text-[#1A1A1A]">Thao tác kho</h3>
-                <div class="mt-4 grid gap-3">
-                    <a href="{{ route('inventory.import.create') }}" class="rounded-2xl border border-[#522C25]/10 bg-[#FAF7F2] p-4 transition hover:border-[#8B5A2B]/35 hover:bg-[#FFF7E8]">
-                        <p class="font-semibold text-[#1A1A1A]">Tạo phiếu nhập nguyên liệu</p>
-                        <p class="mt-1 text-sm text-[#522C25]/60">Mở form nhập kho và cập nhật tồn sau khi duyệt.</p>
-                    </a>
-                    <a href="{{ route('inventory.stockcheck.create') }}" class="rounded-2xl border border-[#522C25]/10 bg-[#FAF7F2] p-4 transition hover:border-[#8B5A2B]/35 hover:bg-[#FFF7E8]">
-                        <p class="font-semibold text-[#1A1A1A]">Tạo phiếu kiểm kê</p>
-                        <p class="mt-1 text-sm text-[#522C25]/60">Ghi nhận chênh lệch thực tế và đồng bộ lại dữ liệu kho.</p>
-                    </a>
-                </div>
-            </div>
-
-            <div class="rounded-[2rem] bg-[#FAF7F2] p-5 ring-1 ring-[#522C25]/10">
-                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#8B5A2B]/70">Dữ liệu</p>
-                <div class="mt-4 grid gap-2">
-                    <a href="{{ route('inventory.materials.index') }}" class="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#522C25] transition hover:text-[#8B5A2B]">
-                        Danh mục nguyên liệu
-                        <span>→</span>
-                    </a>
-                    <a href="{{ route('inventory.import.index') }}" class="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#522C25] transition hover:text-[#8B5A2B]">
-                        Danh sách phiếu nhập
-                        <span>→</span>
-                    </a>
-                    <a href="{{ route('inventory.stockcheck.index') }}" class="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#522C25] transition hover:text-[#8B5A2B]">
-                        Danh sách kiểm kê
-                        <span>→</span>
-                    </a>
-                </div>
-            </div>
-        </aside>
+        <div class="border-t border-gray-100 px-5 py-4">
+            {{ $materials->links() }}
+        </div>
     </section>
 </div>
 @endsection

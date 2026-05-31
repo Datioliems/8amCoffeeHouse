@@ -2,9 +2,19 @@
 @php
     $imgUrl = $mon->image_url;
     $hetHang = $mon->trang_thai === 'het_hang';
+    $displayOptions = [
+        'temperature' => $mon->options?->where('loai_option', 'temperature')->where('trang_thai', 'active')->pluck('ten_option')->values()->all() ?? [],
+        'sweetness' => $mon->options?->where('loai_option', 'sweetness')->where('trang_thai', 'active')->pluck('ten_option')->values()->all() ?? [],
+        'toppings' => $mon->options?->where('loai_option', 'topping')->where('trang_thai', 'active')->pluck('ten_option')->values()->all() ?? [],
+    ];
+    $optionText = mb_strtolower(($mon->ten_mon ?? '') . ' ' . ($mon->danhMuc?->ten_danh_muc ?? ''));
+    if (str_contains($optionText, 'eats') || str_contains($optionText, 'bánh') || str_contains($optionText, 'hạt sen') || str_contains($optionText, 'đồ ăn')) {
+        $displayOptions['temperature'] = [];
+        $displayOptions['sweetness'] = [];
+    }
 @endphp
 
-<article class="group overflow-hidden rounded-2xl bg-white ring-1 ring-[#522C25]/10 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#522C25]/10 {{ $hetHang ? 'opacity-70' : '' }}">
+<article class="group flex h-full flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-[#522C25]/10 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#522C25]/10 {{ $hetHang ? 'opacity-70' : '' }}">
     <div class="relative aspect-[4/3] overflow-hidden bg-[#F2F2F2]">
         @if($imgUrl)
             <img src="{{ $imgUrl }}" alt="{{ $mon->ten_mon }}" loading="lazy"
@@ -25,7 +35,7 @@
         @endif
     </div>
 
-    <div class="flex min-h-36 flex-col p-4">
+    <div class="flex min-h-36 flex-1 flex-col p-4">
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
                 <p class="am-headline text-base font-semibold leading-tight text-[#1A1A1A]">
@@ -50,6 +60,7 @@
                             'mo_ta' => $mon->mo_ta,
                             'category' => $mon->danhMuc?->ten_danh_muc,
                             'image_url' => $imgUrl,
+                            'options' => $displayOptions,
                         ]))"
                         class="am-headline flex w-full items-center justify-between rounded-full bg-[#E82C2A] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#BB0011] active:scale-[0.98]">
                     <span>Thêm món</span>

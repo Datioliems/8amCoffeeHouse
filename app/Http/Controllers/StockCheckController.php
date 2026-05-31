@@ -43,7 +43,6 @@ class StockCheckController extends Controller
             'items'              => 'required|array|min:1',
             'items.*.ma_nl'      => 'required|exists:NGUYEN_LIEU,ma_nl',
             'items.*.sl_thuc_te' => 'required|numeric|min:0',
-            'items.*.don_gia_tb' => 'nullable|integer|min:0',
             'ghi_chu'            => 'nullable|string|max:300',
         ]);
 

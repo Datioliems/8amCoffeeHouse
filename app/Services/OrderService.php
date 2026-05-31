@@ -8,6 +8,7 @@ use App\Models\ChiTietOrder;
 use App\Models\ChiTietOrderOption;
 use App\Models\KhachHang;
 use App\Models\Mon;
+use App\Services\MenuAvailabilityService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -21,15 +22,9 @@ class OrderService
                 $khachHang = KhachHang::where('sdt', $sdtKh)->first();
             }
             if (!$khachHang) {
-                $maKh = 'KH' . str_pad(KhachHang::count() + 1, 6, '0', STR_PAD_LEFT);
-                $khachHang = KhachHang::create([
-                    'ma_kh'  => $maKh,
-                    'ten_kh' => $tenKh,
-                    'sdt'    => $sdtKh,
-                ]);
+                $khachHang = $this->createKhachHang($tenKh, $sdtKh);
             }
 
-            // FIX: ORD(3) + ymdHi(10) + ss(2) + XX(2) = 17 ký tự — luôn ≤ 20
             $maOrder = $this->generateUniqueOrderId();
 
             Order::create([
@@ -59,6 +54,15 @@ class OrderService
                           ->where('trang_thai', 'cho_xac_nhan')
                           ->lockForUpdate()
                           ->firstOrFail();
+
+            $order->loadMissing('chiTietOrders.mon.dinhMucs.nguyenLieu.tonKhos');
+            $stockIssues = $this->stockIssuesForOrder($order);
+            if (!empty($stockIssues)) {
+                throw ValidationException::withMessages([
+                    'stock' => 'Không thể xác nhận đơn vì thiếu nguyên liệu: ' . implode('; ', $stockIssues) . '. Vui lòng báo khách, điều chỉnh đơn hoặc ẩn món đang hết nguyên liệu.',
+                ]);
+            }
+
             $order->update(['trang_thai' => 'da_xac_nhan']);
             $this->log($maOrder, 'xac_nhan_don', 'cho_xac_nhan', 'da_xac_nhan', 'Nhan vien xac nhan don hang.', maNv: session('ma_nv'));
         });
@@ -73,12 +77,7 @@ class OrderService
             }
 
             if (!$khachHang) {
-                $maKh = 'KH' . str_pad(KhachHang::count() + 1, 6, '0', STR_PAD_LEFT);
-                $khachHang = KhachHang::create([
-                    'ma_kh' => $maKh,
-                    'ten_kh' => $tenKh ?: 'Khách mang về',
-                    'sdt' => $sdtKh,
-                ]);
+                $khachHang = $this->createKhachHang($tenKh ?: 'Khách mang về', $sdtKh);
             }
 
             $maOrder = $this->generateUniqueOrderId();
@@ -104,13 +103,17 @@ class OrderService
                     ->where('trang_thai', 'active')
                     ->firstOrFail();
 
-                ChiTietOrder::create([
+                $chiTiet = ChiTietOrder::create([
                     'ma_order' => $maOrder,
                     'ma_mon' => $mon->ma_mon,
                     'so_luong' => $quantity,
                     'don_gia_tai_thoi_diem' => $mon->don_gia,
                     'ghi_chu' => $item['ghi_chu'] ?? null,
                 ]);
+
+                if (!empty($item['options'])) {
+                    $this->syncOrderOptions($chiTiet->id, $maOrder, $mon->ma_mon, $item['options']);
+                }
             }
 
             $this->log($maOrder, 'tao_don_mang_ve', null, 'cho_xac_nhan', 'Nhan vien tao don mua mang ve.', [
@@ -163,26 +166,26 @@ class OrderService
             }
 
             if ($existing) {
-                ChiTietOrder::where('ma_order', $maOrder)->where('ma_mon', $maMon)
-                    ->increment('so_luong', $soLuong);
-                if ($ghiChu) {
-                    $notes = trim(implode("\n", array_filter([$existing->ghi_chu, $ghiChu])));
-                    ChiTietOrder::where('ma_order', $maOrder)->where('ma_mon', $maMon)
-                        ->update(['ghi_chu' => mb_substr($notes, 0, 200)]);
+                $existing->increment('so_luong', $soLuong);
+                // Chỉ ghi đè ghi_chu khi có giá trị mới và khác nội dung cũ
+                if ($ghiChu && $ghiChu !== $existing->ghi_chu) {
+                    $existing->update(['ghi_chu' => mb_substr($ghiChu, 0, 200)]);
                 }
+                $chiTietId = $existing->id;
                 $action = 'tang_so_luong_mon';
             } else {
-                ChiTietOrder::create([
+                $chiTiet = ChiTietOrder::create([
                     'ma_order'              => $maOrder,
                     'ma_mon'                => $maMon,
                     'so_luong'              => $soLuong,
                     'don_gia_tai_thoi_diem' => $mon->don_gia,
                     'ghi_chu'               => $ghiChu,
                 ]);
+                $chiTietId = $chiTiet->id;
                 $action = 'them_mon';
             }
 
-            $this->syncOrderOptions($maOrder, $maMon, $options);
+            $this->syncOrderOptions($chiTietId, $maOrder, $maMon, $options);
             $this->log($maOrder, $action, data: [
                 'ma_mon' => $maMon,
                 'so_luong' => $soLuong,
@@ -192,21 +195,22 @@ class OrderService
         });
     }
 
-    private function syncOrderOptions(string $maOrder, string $maMon, array $options): void
+    private function syncOrderOptions(int $chiTietId, string $maOrder, string $maMon, array $options): void
     {
         if (empty($options)) {
             return;
         }
 
-        ChiTietOrderOption::where('ma_order', $maOrder)->where('ma_mon', $maMon)->delete();
+        ChiTietOrderOption::where('chi_tiet_id', $chiTietId)->delete();
 
         foreach ($options as $option) {
             ChiTietOrderOption::create([
-                'ma_order' => $maOrder,
-                'ma_mon' => $maMon,
-                'loai_option' => (string) ($option['type'] ?? 'custom'),
+                'chi_tiet_id'  => $chiTietId,
+                'ma_order'     => $maOrder,
+                'ma_mon'       => $maMon,
+                'loai_option'  => (string) ($option['type'] ?? 'custom'),
                 'ten_lua_chon' => (string) ($option['value'] ?? ''),
-                'gia_them' => (int) ($option['price'] ?? 0),
+                'gia_them'     => (int) ($option['price'] ?? 0),
             ]);
         }
     }
@@ -223,9 +227,37 @@ class OrderService
         });
     }
 
+    private function stockIssuesForOrder(Order $order): array
+    {
+        $availability = app(MenuAvailabilityService::class);
+
+        return $order->chiTietOrders
+            ->map(function ($item) use ($availability, $order) {
+                if (!$item->mon) {
+                    return null;
+                }
+
+                $missing = $availability->unavailableIngredients($item->mon, $order->ma_chi_nhanh, (int) $item->so_luong);
+
+                return empty($missing)
+                    ? null
+                    : ($item->mon->ten_mon . ' thiếu ' . implode(', ', $missing));
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
     public function merge(string $maOrderGoc, string $maOrderTarget): void
     {
         DB::transaction(function () use ($maOrderGoc, $maOrderTarget) {
+            $orderGoc = Order::where('ma_order', $maOrderGoc)->lockForUpdate()->firstOrFail();
+            $target   = Order::where('ma_order', $maOrderTarget)->lockForUpdate()->firstOrFail();
+
+            if ($orderGoc->ma_chi_nhanh !== $target->ma_chi_nhanh) {
+                throw new \InvalidArgumentException('Không thể gộp đơn của hai chi nhánh khác nhau.');
+            }
+
             $targetItems = ChiTietOrder::where('ma_order', $maOrderTarget)
                 ->lockForUpdate()->get();
 
@@ -234,17 +266,14 @@ class OrderService
                     ->where('ma_mon', $item->ma_mon)->lockForUpdate()->first();
 
                 if ($existing) {
-                    ChiTietOrder::where('ma_order', $maOrderGoc)->where('ma_mon', $item->ma_mon)
-                        ->increment('so_luong', $item->so_luong);
-                    ChiTietOrder::where('ma_order', $maOrderTarget)->where('ma_mon', $item->ma_mon)
-                        ->delete();
+                    $existing->increment('so_luong', $item->so_luong);
+                    // Xóa dòng target (cascade sẽ xóa options)
+                    $item->delete();
                 } else {
-                    ChiTietOrder::where('ma_order', $maOrderTarget)->where('ma_mon', $item->ma_mon)
-                        ->update(['ma_order' => $maOrderGoc]);
+                    $item->update(['ma_order' => $maOrderGoc]);
                 }
             }
 
-            $target = Order::where('ma_order', $maOrderTarget)->lockForUpdate()->firstOrFail();
             $oldStatus = $target->trang_thai;
             $target->update(['trang_thai' => 'da_huy']);
             $this->log($maOrderGoc, 'gop_don_nhan', data: ['ma_order_gop' => $maOrderTarget]);
@@ -277,7 +306,7 @@ class OrderService
                 'gio_order'    => now()->toTimeString(),
             ]);
 
-            ChiTietOrder::create([
+            $chiTietMoi = ChiTietOrder::create([
                 'ma_order'              => $maOrderMoi,
                 'ma_mon'                => $maMon,
                 'so_luong'              => $soLuongTach,
@@ -285,22 +314,22 @@ class OrderService
                 'ghi_chu'               => $itemGoc->ghi_chu,
             ]);
 
-            $options = ChiTietOrderOption::where('ma_order', $maOrderGoc)
-                ->where('ma_mon', $maMon)
+            // Copy options theo chi_tiet_id — tránh tính gấp đôi phụ thu
+            $options = ChiTietOrderOption::where('chi_tiet_id', $itemGoc->id)
                 ->get(['loai_option', 'ten_lua_chon', 'gia_them']);
 
             foreach ($options as $option) {
                 ChiTietOrderOption::create([
-                    'ma_order' => $maOrderMoi,
-                    'ma_mon' => $maMon,
-                    'loai_option' => $option->loai_option,
+                    'chi_tiet_id'  => $chiTietMoi->id,
+                    'ma_order'     => $maOrderMoi,
+                    'ma_mon'       => $maMon,
+                    'loai_option'  => $option->loai_option,
                     'ten_lua_chon' => $option->ten_lua_chon,
-                    'gia_them' => $option->gia_them,
+                    'gia_them'     => $option->gia_them,
                 ]);
             }
 
-            ChiTietOrder::where('ma_order', $maOrderGoc)->where('ma_mon', $maMon)
-                ->decrement('so_luong', $soLuongTach);
+            $itemGoc->decrement('so_luong', $soLuongTach);
 
             $this->log($maOrderGoc, 'tach_don_goc', data: [
                 'ma_order_moi' => $maOrderMoi,
@@ -346,6 +375,30 @@ class OrderService
             'ma_nv' => $maNv ?? session('ma_nv'),
             'created_at' => now(),
         ]);
+    }
+
+    private function createKhachHang(string $tenKh, ?string $sdtKh): KhachHang
+    {
+        $attempts = 0;
+        while (true) {
+            try {
+                $max = KhachHang::query()
+                    ->selectRaw("MAX(CAST(SUBSTRING(ma_kh, 3) AS UNSIGNED)) as max_code")
+                    ->value('max_code') ?? 0;
+                $maKh = 'KH' . str_pad((string) ($max + 1), 6, '0', STR_PAD_LEFT);
+
+                return KhachHang::create([
+                    'ma_kh'  => $maKh,
+                    'ten_kh' => $tenKh,
+                    'sdt'    => $sdtKh,
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // errorInfo[1] === 1062: Duplicate entry
+                if ($attempts++ >= 3 || $e->errorInfo[1] !== 1062) {
+                    throw $e;
+                }
+            }
+        }
     }
 
     private function generateUniqueOrderId(): string
