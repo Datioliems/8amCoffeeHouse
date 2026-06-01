@@ -22,10 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && docker-php-ext-install pdo_mysql bcmath zip gd \
  && rm -rf /var/lib/apt/lists/*
 
-# Apache: chỉ dùng MỘT MPM (prefork) + bật rewrite
-# Tránh lỗi "AH00534: More than one MPM loaded".
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true; \
-    a2enmod mpm_prefork rewrite
+# Apache: chỉ dùng MỘT MPM (prefork) + bật rewrite.
+# Xóa thẳng symlink event/worker rồi bật prefork — tránh "More than one MPM loaded".
+RUN rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* ; \
+    a2enmod mpm_prefork rewrite ; \
+    echo "== MPM dang bat ==" ; ls /etc/apache2/mods-enabled/ | grep -i mpm || true
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
