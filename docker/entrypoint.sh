@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-# Host (Railway/Render) cấp cổng động qua $PORT — cho Apache lắng nghe đúng cổng.
-PORT="${PORT:-80}"
+# Host (Railway/Render) cấp cổng qua $PORT — cho Apache lắng nghe đúng cổng.
+PORT="${PORT:-8080}"
 sed -ri "s/^Listen 80\$/Listen ${PORT}/" /etc/apache2/ports.conf || true
 sed -ri "s/:80>/:${PORT}>/" /etc/apache2/sites-available/000-default.conf || true
 
