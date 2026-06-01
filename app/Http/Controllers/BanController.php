@@ -16,8 +16,9 @@ class BanController extends Controller
         $maChiNhanh = session('ma_chi_nhanh');
         $bans = Ban::where('ma_chi_nhanh', $maChiNhanh)->orderBy('so_ban')->get();
         $orderCounts = $this->orderCounts($maChiNhanh);
+        $chiNhanh = \App\Models\ChiNhanh::find($maChiNhanh);
 
-        return view('staff.ban-list', compact('bans', 'orderCounts'));
+        return view('staff.ban-list', compact('bans', 'orderCounts', 'chiNhanh'));
     }
 
     public function update(Request $request, string $maBan)
@@ -37,9 +38,32 @@ class BanController extends Controller
         return back()->with('success', 'Đã cập nhật bàn '.$ban->so_ban.'.');
     }
 
+    /**
+     * Model 3D DÀNH RIÊNG cho sơ đồ nhân viên (khác model trang khách showroom).
+     * CN001 dùng floorplan.glb (bản gốc, sạch); chi nhánh khác có model riêng.
+     */
+    private const STAFF_FLOORPLAN_MODEL = [
+        'CN001' => 'floorplan.glb',
+        'CN002' => 'cafe_CN002.glb',
+    ];
+
     public function floorplan()
     {
-        return view('staff.floorplan');
+        $maChiNhanh = session('ma_chi_nhanh');
+        $chiNhanh   = \App\Models\ChiNhanh::find($maChiNhanh);
+        // Ưu tiên model sơ đồ riêng cho nhân viên; fallback floorplan.glb.
+        $model3d    = self::STAFF_FLOORPLAN_MODEL[$maChiNhanh] ?? 'floorplan.glb';
+
+        // Danh sách tầng động theo chi nhánh (CN002 chỉ có 1 tầng)
+        $floors = Ban::where('ma_chi_nhanh', $maChiNhanh)
+            ->whereNotNull('vi_tri')
+            ->distinct()
+            ->orderBy('vi_tri')
+            ->pluck('vi_tri')
+            ->filter()
+            ->values();
+
+        return view('staff.floorplan', compact('model3d', 'floors', 'chiNhanh'));
     }
 
     /** Nhân viên tải/đổi ảnh cho 1 bàn (hiển thị ở sơ đồ 3D menu3). */
@@ -134,15 +158,22 @@ class BanController extends Controller
         $counts = $this->orderCounts($branch);
         $bans = Ban::where('ma_chi_nhanh', $branch)->orderBy('so_ban')->get();
 
-        return response()->json($bans->map(fn ($b) => [
-            'ma_ban' => $b->ma_ban,
-            'so_ban' => $b->so_ban,
-            'vi_tri' => $b->vi_tri,
-            'so_ghe' => $b->so_ghe,
-            'trang_thai' => $b->trang_thai,
-            'orders' => (int) ($counts[$b->ma_ban] ?? 0),
-            'anh_ban' => $b->anh ?: (isset(self::TABLE_IMG[$b->ma_ban]) ? self::TABLE_IMG[$b->ma_ban].'.jpg' : null),
-        ])->values());
+        return response()->json($bans->map(function ($b) use ($counts) {
+            $orders = (int) ($counts[$b->ma_ban] ?? 0);
+            // Trạng thái hiển thị: có đơn đang mở → coi như "có khách",
+            // dù cờ trang_thai trong DB chưa kịp cập nhật.
+            $trangThai = $orders > 0 ? 'co_khach' : $b->trang_thai;
+
+            return [
+                'ma_ban' => $b->ma_ban,
+                'so_ban' => $b->so_ban,
+                'vi_tri' => $b->vi_tri,
+                'so_ghe' => $b->so_ghe,
+                'trang_thai' => $trangThai,
+                'orders' => $orders,
+                'anh_ban' => $b->anh ?: (isset(self::TABLE_IMG[$b->ma_ban]) ? self::TABLE_IMG[$b->ma_ban].'.jpg' : null),
+            ];
+        })->values());
     }
 
     private function doMove(string $from, string $to, ?string $branch)

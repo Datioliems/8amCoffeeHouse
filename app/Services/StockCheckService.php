@@ -16,6 +16,7 @@ class StockCheckService
             $phieu = PhieuKiemKe::create([
                 'ma_pkk'       => $maPkk,
                 'ngay_kk'      => now()->toDateString(),
+                'thoi_gian_kk' => now(),
                 'ma_chi_nhanh' => $maChiNhanh,
                 'ma_nv'        => $maNv,
                 'trang_thai'   => 'nhap',

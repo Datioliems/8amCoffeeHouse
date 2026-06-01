@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\HoaDon;
 use App\Models\Order;
 use App\Models\OrderLog;
+use App\Services\OrderService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PaymentService
 {
     private const PAYABLE_STATUSES = ['cho_xac_nhan', 'da_xac_nhan', 'dang_pha_che', 'da_phuc_vu'];
+
+    public function __construct(private OrderService $orderService) {}
 
     public function createInvoice(string $maOrder, float $chietKhau, string $phuongThuc, string $maNvThuNgan): string
     {
@@ -31,6 +34,10 @@ class PaymentService
                     'trang_thai' => 'Đơn hàng ở trạng thái "' . $order->trang_thai . '" không thể thanh toán.',
                 ]);
             }
+
+            // Phát sinh giao dịch → lưu khách hàng vào danh sách (theo SĐT)
+            $this->orderService->ensureCustomerForOrder($order);
+            $order->refresh();
 
             // Tổng tiền = (giá món + phụ thu options) × số lượng
             $tongTruoc = $order->chiTietOrders->sum(
@@ -55,7 +62,11 @@ class PaymentService
             ]);
 
             $oldStatus = $order->trang_thai;
-            $order->update(['trang_thai' => 'hoan_thanh']);
+            $order->update([
+                'trang_thai'           => 'hoan_thanh',
+                'thoi_gian_thanh_toan' => now(),
+                'thoi_gian_phuc_vu'    => $order->thoi_gian_phuc_vu ?? now(),
+            ]);
             OrderLog::create([
                 'ma_order'       => $maOrder,
                 'hanh_dong'      => 'thanh_toan',

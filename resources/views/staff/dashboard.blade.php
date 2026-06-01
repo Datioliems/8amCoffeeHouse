@@ -100,7 +100,7 @@
             <div class="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
                 <div>
                     <p class="font-mono text-sm font-semibold text-[#1A1A1A]">{{ $order->ma_order }}</p>
-                    <p class="mt-1 text-sm text-[#522C25]/65">Bàn {{ $order->ban->so_ban ?? '?' }} · {{ $order->khachHang->ten_kh ?? 'Khách' }}</p>
+                    <p class="mt-1 text-sm text-[#522C25]/65">Bàn {{ $order->ban->so_ban ?? '?' }} · {{ $order->customer_name ?? 'Khách' }}</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <x-order-status-badge :status="$order->trang_thai" />

@@ -21,7 +21,7 @@ class OrderController extends Controller
         $status     = in_array($request->get('status'), $allowedStatuses, true) ? $request->get('status') : 'cho_xac_nhan';
         $maChiNhanh = (string) session('ma_chi_nhanh', '');
 
-        $orders = Order::with(['ban', 'chiTietOrders.mon', 'khachHang', 'hoaDon'])
+        $orders = Order::with(['ban', 'chiTietOrders.mon', 'chiTietOrders.options', 'khachHang', 'hoaDon'])
             ->where('ma_chi_nhanh', $maChiNhanh)
             ->where('trang_thai', $status)
             ->orderByDesc('ngay_order')
@@ -206,6 +206,12 @@ class OrderController extends Controller
         $owned = (array) session('customer_orders', []);
         $owned[] = $maOrder;
         session()->put('customer_orders', $owned);
+
+        // Ghi nhớ thông tin khách trong phiên trình duyệt để "Gọi món khác" không phải nhập lại
+        session()->put('customer_profile', [
+            'ten_kh' => $request->ten_kh,
+            'sdt_kh' => $request->sdt_kh,
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([

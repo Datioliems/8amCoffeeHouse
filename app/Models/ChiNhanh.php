@@ -12,5 +12,7 @@ class ChiNhanh extends Model
     protected $keyType    = 'string';
     public $timestamps    = false;
 
-    protected $fillable = ['ma_chi_nhanh','ten_chi_nhanh','dia_chi','sdt'];
+    protected $fillable = ['ma_chi_nhanh','ten_chi_nhanh','dia_chi','sdt','model_3d'];
+
+    public function bans() { return $this->hasMany(Ban::class, 'ma_chi_nhanh', 'ma_chi_nhanh'); }
 }

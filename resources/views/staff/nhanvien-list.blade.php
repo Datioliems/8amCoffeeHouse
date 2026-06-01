@@ -5,16 +5,20 @@
 
 @php
     $roleBadge = [
-        'admin'     => 'bg-[#1A1A1A] text-white',
-        'quan_ly'   => 'bg-[#E82C2A] text-white',
-        'bartender' => 'bg-amber-100 text-amber-800',
-        'nhan_vien' => 'bg-sky-100 text-sky-800',
+        'superadmin' => 'bg-[#1A1A1A] text-white',
+        'admin'      => 'bg-[#E82C2A] text-white',
+        'nhan_vien'  => 'bg-sky-100 text-sky-800',
     ];
+    $rank = ['nhan_vien' => 1, 'admin' => 2, 'superadmin' => 3];
+    $myRank = $rank[session('chuc_vu')] ?? 0;
 @endphp
 
 @section('content')
 <div class="mx-auto max-w-6xl space-y-6">
 
+    @if(session('success'))
+    <div class="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{{ session('success') }}</div>
+    @endif
     @if($errors->any())
     <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         <ul class="list-disc space-y-0.5 pl-5">
@@ -27,11 +31,8 @@
     <div class="rounded-3xl border border-[#522C25]/10 bg-white p-6 shadow-sm">
         <h2 class="mb-1 text-base font-semibold">Tạo tài khoản nhân viên mới</h2>
         <p class="mb-4 text-sm text-[#522C25]/60">
-            @if($isAdmin)
-                Chủ chuỗi có thể tạo tài khoản cho bất kỳ chi nhánh và vai trò nào.
-            @else
-                Bạn chỉ có thể tạo tài khoản Pha chế / Phục vụ cho chi nhánh {{ $myBranch }}.
-            @endif
+            Tên đăng nhập (dạng <strong>staff0001</strong>) và mật khẩu được tạo tự động; mật khẩu sẽ gửi tới email nhân viên.
+            @unless($isSuperAdmin) Bạn chỉ tạo được nhân viên cho chi nhánh {{ $myBranch }}. @endunless
         </p>
 
         <form method="POST" action="{{ route('nhanvien.store') }}" class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -40,6 +41,11 @@
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Họ tên</label>
                 <input name="ten_nv" value="{{ old('ten_nv') }}" required
                        class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm" placeholder="Nguyễn Văn A">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Email (nhận mật khẩu)</label>
+                <input name="email" type="email" value="{{ old('email') }}" required
+                       class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm" placeholder="nhanvien@email.com">
             </div>
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Số điện thoại</label>
@@ -55,18 +61,8 @@
                 </select>
             </div>
             <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Tên đăng nhập</label>
-                <input name="ten_tk" value="{{ old('ten_tk') }}" required autocomplete="off"
-                       class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm" placeholder="staff02">
-            </div>
-            <div>
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Mật khẩu</label>
-                <input name="mat_khau" type="text" required autocomplete="new-password"
-                       class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm" placeholder="ít nhất 6 ký tự">
-            </div>
-            <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Chi nhánh</label>
-                @if($isAdmin)
+                @if($isSuperAdmin)
                 <select name="ma_chi_nhanh" required class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm">
                     @foreach($branches as $b)
                         <option value="{{ $b->ma_chi_nhanh }}" @selected(old('ma_chi_nhanh')===$b->ma_chi_nhanh)>{{ $b->ten_chi_nhanh }}</option>
@@ -77,7 +73,7 @@
                 <input type="hidden" name="ma_chi_nhanh" value="{{ $myBranch }}">
                 @endif
             </div>
-            <div class="md:col-span-3">
+            <div class="flex items-end">
                 <button class="rounded-xl bg-[#1A1A1A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-black">
                     + Tạo tài khoản
                 </button>
@@ -94,20 +90,22 @@
             <table class="w-full text-sm">
                 <thead class="bg-[#F8F6F5] text-left text-xs uppercase tracking-wide text-[#522C25]/60">
                     <tr>
-                        <th class="px-4 py-3">Mã / Đăng nhập</th>
-                        <th class="px-4 py-3">Họ tên</th>
+                        <th class="px-4 py-3">Đăng nhập</th>
+                        <th class="px-4 py-3">Họ tên / Email</th>
                         <th class="px-4 py-3">Chi nhánh</th>
                         <th class="px-4 py-3">Vai trò</th>
                         <th class="px-4 py-3">Trạng thái</th>
-                        <th class="px-4 py-3 text-right">Phân quyền / Khoá</th>
+                        <th class="px-4 py-3 text-right">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#522C25]/8">
                     @foreach($accounts as $a)
                     @php
-                        $isSelf  = $a->ma_tai_khoan === session('tai_khoan_id');
-                        // quản lý không được sửa admin/quan_ly
-                        $locked  = $isSelf || (! $isAdmin && in_array($a->chuc_vu, ['admin','quan_ly']));
+                        $isSelf = $a->ma_tai_khoan === session('tai_khoan_id');
+                        // Không thao tác được người ngang/cao hơn; quản lý chỉ trong chi nhánh mình
+                        $targetRank = $rank[$a->chuc_vu] ?? 0;
+                        $locked = $isSelf || $targetRank >= $myRank
+                            || (! $isSuperAdmin && $a->ma_chi_nhanh !== $myBranch);
                     @endphp
                     <tr class="align-middle">
                         <td class="px-4 py-3">
@@ -116,6 +114,7 @@
                         </td>
                         <td class="px-4 py-3">
                             {{ $a->ten_nv }}
+                            @if($a->email)<p class="text-xs text-[#522C25]/50">{{ $a->email }}</p>@endif
                             @if($a->sdt)<p class="text-xs text-[#522C25]/50">{{ $a->sdt }}</p>@endif
                         </td>
                         <td class="px-4 py-3">{{ $a->ma_chi_nhanh }}</td>
@@ -150,22 +149,34 @@
                                     </select>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <div class="flex items-center justify-end gap-2">
-                                        @if($isAdmin)
+                                    <div class="flex flex-wrap items-center justify-end gap-2">
+                                        @if($isSuperAdmin)
                                         <select name="ma_chi_nhanh" title="Chuyển chi nhánh" class="rounded-lg border border-[#522C25]/15 px-2 py-1.5 text-xs">
                                             @foreach($branches as $b)
                                                 <option value="{{ $b->ma_chi_nhanh }}" @selected($a->ma_chi_nhanh===$b->ma_chi_nhanh)>{{ $b->ma_chi_nhanh }}</option>
                                             @endforeach
                                         </select>
+                                        <label class="flex items-center gap-1 text-xs text-[#522C25]/70">
+                                            <input type="checkbox" name="reset_mat_khau" value="1"> Đặt lại MK
+                                        </label>
                                         @endif
-                                        <input name="mat_khau" type="text" placeholder="MK mới (tùy chọn)" autocomplete="new-password"
-                                               class="w-32 rounded-lg border border-[#522C25]/15 px-2 py-1.5 text-xs">
                                         <button class="rounded-lg bg-[#1A1A1A] px-3 py-1.5 text-xs font-semibold text-white hover:bg-black">Lưu</button>
                                     </div>
                                 </td>
                             </form>
                         @endif
                     </tr>
+                    @if(! $locked)
+                    <tr>
+                        <td colspan="6" class="px-4 pb-3 text-right">
+                            <form method="POST" action="{{ route('nhanvien.destroy', $a->ma_tai_khoan) }}"
+                                  onsubmit="return confirm('Xóa tài khoản {{ $a->ten_tk }}?');">
+                                @csrf @method('DELETE')
+                                <button class="text-xs font-semibold text-[#BB0011] hover:underline">Xóa tài khoản</button>
+                            </form>
+                        </td>
+                    </tr>
+                    @endif
                     @endforeach
                 </tbody>
             </table>

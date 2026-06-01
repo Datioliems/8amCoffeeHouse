@@ -12,12 +12,21 @@ class Order extends Model
     protected $keyType    = 'string';
     public $timestamps    = false;
 
-    protected $fillable = ['ma_order','ma_ban','ma_kh','ma_chi_nhanh','trang_thai','ngay_order','gio_order','ghi_chu'];
+    protected $fillable = ['ma_order','ma_ban','ma_kh','ten_khach','sdt_khach','ma_chi_nhanh','trang_thai','ngay_order','gio_order','ghi_chu','thoi_gian_xac_nhan','thoi_gian_phuc_vu','thoi_gian_thanh_toan'];
 
     protected $casts = [
-        'ngay_order' => 'date',
-        'gio_order'  => 'string',
+        'ngay_order'          => 'date',
+        'gio_order'           => 'string',
+        'thoi_gian_xac_nhan'  => 'datetime',
+        'thoi_gian_phuc_vu'   => 'datetime',
+        'thoi_gian_thanh_toan'=> 'datetime',
     ];
+
+    /** Tên khách để hiển thị: ưu tiên khách đã lưu (có giao dịch), fallback tên tạm trên đơn. */
+    public function getCustomerNameAttribute(): ?string
+    {
+        return $this->khachHang?->ten_kh ?: $this->ten_khach;
+    }
 
     public function ban()          { return $this->belongsTo(Ban::class, 'ma_ban', 'ma_ban'); }
     public function khachHang()    { return $this->belongsTo(KhachHang::class, 'ma_kh', 'ma_kh'); }

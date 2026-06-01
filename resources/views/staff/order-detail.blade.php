@@ -40,7 +40,8 @@
                     </div>
                     <div>
                         <p class="mb-0.5 text-xs text-gray-400">Khách hàng</p>
-                        <p class="font-medium">{{ $order->khachHang->ten_kh ?? 'Khách vãng lai' }}</p>
+                        <p class="font-medium">{{ $order->customer_name ?? 'Khách vãng lai' }}</p>
+                        @if($order->sdt_khach)<p class="text-xs text-gray-400">{{ $order->sdt_khach }}</p>@endif
                     </div>
                 </div>
             </div>

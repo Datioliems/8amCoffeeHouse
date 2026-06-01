@@ -60,7 +60,7 @@ function initShowroom(root) {
     const clock = new THREE.Clock();
 
     const draco = new DRACOLoader();
-    draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    draco.setDecoderPath('/draco/');   // host nội bộ — chạy được kể cả offline/bị chặn CDN
     const loader = new GLTFLoader();
     loader.setDRACOLoader(draco);
 

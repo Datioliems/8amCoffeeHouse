@@ -65,9 +65,32 @@
         </div>
 
         @if(!in_array($order->trang_thai, ['hoan_thanh', 'da_huy']))
-            <p class="mt-6 text-xs text-[#522C25]/55">Trang sẽ tự cập nhật sau 10 giây.</p>
-            <meta http-equiv="refresh" content="10">
+            <p class="mt-6 text-xs text-[#522C25]/55">Trang sẽ tự cập nhật trạng thái.</p>
         @endif
     </div>
 </div>
+
+@if(!in_array($order->trang_thai, ['hoan_thanh', 'da_huy']))
+<script>
+    // Polling trạng thái đơn — chỉ reload khi trạng thái thực sự đổi (mượt hơn meta-refresh).
+    (function () {
+        const url = @json(route('customer.statusJson', $order->ma_order));
+        const current = @json($order->trang_thai);
+        async function poll() {
+            try {
+                const r = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                if (r.ok) {
+                    const data = await r.json();
+                    if (data.trang_thai && data.trang_thai !== current) {
+                        window.location.reload();
+                        return;
+                    }
+                }
+            } catch (e) { /* bỏ qua lỗi mạng tạm thời */ }
+            setTimeout(poll, 5000);
+        }
+        setTimeout(poll, 5000);
+    })();
+</script>
+@endif
 @endsection

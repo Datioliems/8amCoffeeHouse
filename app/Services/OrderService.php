@@ -17,20 +17,16 @@ class OrderService
     public function createOrder(string $maBan, string $tenKh, ?string $sdtKh, string $maChiNhanh): array
     {
         return DB::transaction(function () use ($maBan, $tenKh, $sdtKh, $maChiNhanh) {
-            $khachHang = null;
-            if ($sdtKh) {
-                $khachHang = KhachHang::where('sdt', $sdtKh)->first();
-            }
-            if (!$khachHang) {
-                $khachHang = $this->createKhachHang($tenKh, $sdtKh);
-            }
-
+            // Chưa tạo KHACH_HANG ở bước này — chỉ lưu tạm tên/SĐT trên đơn.
+            // Khách chỉ được lưu vào danh sách khi đã có giao dịch (thanh toán).
             $maOrder = $this->generateUniqueOrderId();
 
             Order::create([
                 'ma_order'     => $maOrder,
                 'ma_ban'       => $maBan,
-                'ma_kh'        => $khachHang->ma_kh,
+                'ma_kh'        => null,
+                'ten_khach'    => $tenKh,
+                'sdt_khach'    => $sdtKh,
                 'ma_chi_nhanh' => $maChiNhanh,
                 'trang_thai'   => 'dang_chon',
                 'ngay_order'   => now()->toDateString(),
@@ -39,21 +35,32 @@ class OrderService
 
             $this->log($maOrder, 'tao_don_nhap', null, 'dang_chon', 'Khach hang bat dau chon mon tu QR.', [
                 'ma_ban' => $maBan,
-                'ma_kh' => $khachHang->ma_kh,
                 'ma_chi_nhanh' => $maChiNhanh,
             ]);
 
-            return ['ma_order' => $maOrder, 'ma_kh' => $khachHang->ma_kh];
+            return ['ma_order' => $maOrder, 'ma_kh' => null];
         });
     }
 
     public function confirm(string $maOrder): void
     {
         DB::transaction(function () use ($maOrder) {
+            // Tìm đơn trước (không lọc trạng thái) để báo lỗi mềm thay vì 404 "not found".
             $order = Order::where('ma_order', $maOrder)
-                          ->where('trang_thai', 'cho_xac_nhan')
                           ->lockForUpdate()
-                          ->firstOrFail();
+                          ->first();
+
+            if (!$order) {
+                throw ValidationException::withMessages([
+                    'order' => 'Không tìm thấy đơn hàng này.',
+                ]);
+            }
+
+            if ($order->trang_thai !== 'cho_xac_nhan') {
+                throw ValidationException::withMessages([
+                    'order' => 'Đơn này không ở trạng thái chờ xác nhận (hiện tại: ' . $this->statusLabel($order->trang_thai) . '). Có thể đơn đã được xử lý.',
+                ]);
+            }
 
             $order->loadMissing('chiTietOrders.mon.dinhMucs.nguyenLieu.tonKhos');
             $stockIssues = $this->stockIssuesForOrder($order);
@@ -63,29 +70,40 @@ class OrderService
                 ]);
             }
 
-            $order->update(['trang_thai' => 'da_xac_nhan']);
+            $order->update([
+                'trang_thai'         => 'da_xac_nhan',
+                'thoi_gian_xac_nhan' => now(),
+            ]);
             $this->log($maOrder, 'xac_nhan_don', 'cho_xac_nhan', 'da_xac_nhan', 'Nhan vien xac nhan don hang.', maNv: session('ma_nv'));
         });
+    }
+
+    /** Nhãn tiếng Việt cho trạng thái đơn (dùng cho thông báo lỗi/UI). */
+    public static function statusLabel(string $trangThai): string
+    {
+        return [
+            'dang_chon'    => 'Đang chọn món',
+            'cho_xac_nhan' => 'Chờ xác nhận',
+            'da_xac_nhan'  => 'Đã xác nhận',
+            'dang_pha_che' => 'Đang pha chế',
+            'da_phuc_vu'   => 'Đã phục vụ',
+            'hoan_thanh'   => 'Đã thanh toán',
+            'da_huy'       => 'Đã hủy',
+        ][$trangThai] ?? $trangThai;
     }
 
     public function createTakeawayOrder(string $tenKh, ?string $sdtKh, string $maChiNhanh, array $items): string
     {
         return DB::transaction(function () use ($tenKh, $sdtKh, $maChiNhanh, $items) {
-            $khachHang = null;
-            if ($sdtKh) {
-                $khachHang = KhachHang::where('sdt', $sdtKh)->first();
-            }
-
-            if (!$khachHang) {
-                $khachHang = $this->createKhachHang($tenKh ?: 'Khách mang về', $sdtKh);
-            }
-
+            // Khách chỉ được lưu vào danh sách khi thanh toán — ở đây chỉ lưu tạm trên đơn.
             $maOrder = $this->generateUniqueOrderId();
 
             Order::create([
                 'ma_order' => $maOrder,
                 'ma_ban' => null,
-                'ma_kh' => $khachHang->ma_kh,
+                'ma_kh' => null,
+                'ten_khach' => $tenKh ?: 'Khách mang về',
+                'sdt_khach' => $sdtKh,
                 'ma_chi_nhanh' => $maChiNhanh,
                 'trang_thai' => 'cho_xac_nhan',
                 'ngay_order' => now()->toDateString(),
@@ -117,7 +135,6 @@ class OrderService
             }
 
             $this->log($maOrder, 'tao_don_mang_ve', null, 'cho_xac_nhan', 'Nhan vien tao don mua mang ve.', [
-                'ma_kh' => $khachHang->ma_kh,
                 'so_dong_mon' => count($items),
             ]);
 
@@ -143,7 +160,17 @@ class OrderService
         DB::transaction(function () use ($maOrder, $trangThai) {
             $order = Order::where('ma_order', $maOrder)->lockForUpdate()->firstOrFail();
             $oldStatus = $order->trang_thai;
-            $order->update(['trang_thai' => $trangThai]);
+
+            $changes = ['trang_thai' => $trangThai];
+            // Đóng dấu mốc thời gian theo trạng thái
+            if ($trangThai === 'da_xac_nhan' && !$order->thoi_gian_xac_nhan) {
+                $changes['thoi_gian_xac_nhan'] = now();
+            }
+            if ($trangThai === 'da_phuc_vu' && !$order->thoi_gian_phuc_vu) {
+                $changes['thoi_gian_phuc_vu'] = now();
+            }
+
+            $order->update($changes);
             $this->log($maOrder, 'cap_nhat_trang_thai', $oldStatus, $trangThai, 'Cap nhat trang thai don hang.', maNv: session('ma_nv'));
         });
     }
@@ -375,6 +402,31 @@ class OrderService
             'ma_nv' => $maNv ?? session('ma_nv'),
             'created_at' => now(),
         ]);
+    }
+
+    /**
+     * Đảm bảo đơn có KHACH_HANG (gọi khi thanh toán — thời điểm phát sinh giao dịch).
+     * Tra theo SĐT tạm trên đơn; tạo mới nếu chưa có. Gắn ma_kh vào đơn.
+     */
+    public function ensureCustomerForOrder(Order $order): ?string
+    {
+        if ($order->ma_kh) {
+            return $order->ma_kh;
+        }
+
+        $tenKh = $order->ten_khach ?: 'Khách lẻ';
+        $sdtKh = $order->sdt_khach;
+
+        $khachHang = null;
+        if ($sdtKh) {
+            $khachHang = KhachHang::where('sdt', $sdtKh)->first();
+        }
+        if (!$khachHang) {
+            $khachHang = $this->createKhachHang($tenKh, $sdtKh);
+        }
+
+        $order->update(['ma_kh' => $khachHang->ma_kh]);
+        return $khachHang->ma_kh;
     }
 
     private function createKhachHang(string $tenKh, ?string $sdtKh): KhachHang

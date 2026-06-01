@@ -77,7 +77,7 @@
 
                         <div>
                             <p class="text-xs font-medium uppercase tracking-[0.12em] text-[#522C25]/45">Khách hàng</p>
-                            <p class="mt-1 truncate text-sm font-medium text-[#522C25]">{{ $order->khachHang->ho_ten ?? $order->ma_kh ?? 'Khách lẻ' }}</p>
+                            <p class="mt-1 truncate text-sm font-medium text-[#522C25]">{{ $order->customer_name ?? 'Khách lẻ' }}</p>
                         </div>
 
                         <div>
@@ -90,11 +90,17 @@
                             <p class="mt-1 text-lg font-bold text-[#8B5A2B]">{{ number_format($paidTotal, 0, ',', '.') }}đ</p>
                         </div>
 
-                        <div class="flex justify-start lg:justify-end">
+                        <div class="flex justify-start gap-2 lg:justify-end">
                             <a href="{{ route('orders.show', $order->ma_order) }}"
                                class="rounded-xl bg-[#1A1A1A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#522C25]">
                                 Xem chi tiết
                             </a>
+                            @if($invoice)
+                            <a href="{{ route('invoice.sale', $order->ma_order) }}" target="_blank"
+                               class="rounded-xl bg-[#8B5A2B] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F4621]">
+                                In hóa đơn
+                            </a>
+                            @endif
                         </div>
                     </div>
                 @empty

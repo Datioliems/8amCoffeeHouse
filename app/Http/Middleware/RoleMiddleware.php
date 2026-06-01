@@ -11,7 +11,7 @@ class RoleMiddleware
     {
         $chucVu = session('chuc_vu');
         // Super-admin (chủ chuỗi) bỏ qua mọi kiểm tra vai trò
-        if ($chucVu === 'admin') {
+        if ($chucVu === 'superadmin') {
             return $next($request);
         }
         if (!in_array($chucVu, $roles)) {

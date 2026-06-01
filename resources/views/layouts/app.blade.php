@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="bg-[#F6F3F2] text-[#1A1A1A]" x-data="{ mobileNav: false }">
 
@@ -22,7 +23,7 @@
         </div>
     </div>
 
-    @if(session('chuc_vu') === 'admin')
+    @if(session('chuc_vu') === 'superadmin')
     @php $__branches = \Illuminate\Support\Facades\DB::table('CHI_NHANH')->orderBy('ma_chi_nhanh')->get(); @endphp
     <form method="POST" action="{{ route('chinhanh.switch') }}" class="border-b border-[#522C25]/10 px-5 py-3">
         @csrf
@@ -61,7 +62,7 @@
             </span>
             Kho hàng
         </a>
-        @if(session('chuc_vu') === 'quan_ly')
+        @if(in_array(session('chuc_vu'), ['superadmin', 'admin']))
         <a href="{{ route('menu.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('menu.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('menu.*') ? 'bg-white/15' : 'bg-white' }}">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z"/><path d="M16 9h2a3 3 0 0 1 0 6h-2"/><path d="M6 2v2"/><path d="M10 2v2"/><path d="M14 2v2"/></svg>
@@ -75,12 +76,24 @@
             </span>
             Bàn & QR
         </a>
-        @if(in_array(session('chuc_vu'), ['admin', 'quan_ly']))
+        @if(in_array(session('chuc_vu'), ['superadmin', 'admin']))
         <a href="{{ route('nhanvien.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('nhanvien.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('nhanvien.*') ? 'bg-white/15' : 'bg-white' }}">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </span>
             Nhân viên & quyền
+        </a>
+        <a href="{{ route('khachhang.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('khachhang.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('khachhang.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+            </span>
+            Khách hàng
+        </a>
+        <a href="{{ route('scanlog.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('scanlog.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('scanlog.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+            </span>
+            Log quét QR
         </a>
         @endif
     </nav>
@@ -118,12 +131,14 @@
         <a href="{{ route('dashboard') }}" class="block rounded-xl px-3 py-2 text-sm">Tổng quan</a>
         <a href="{{ route('orders.index') }}" class="block rounded-xl px-3 py-2 text-sm">Đơn hàng</a>
         <a href="{{ route('inventory.index') }}" class="block rounded-xl px-3 py-2 text-sm">Kho hàng</a>
-        @if(session('chuc_vu') === 'quan_ly')
+        @if(in_array(session('chuc_vu'), ['superadmin', 'admin']))
             <a href="{{ route('menu.index') }}" class="block rounded-xl px-3 py-2 text-sm">Thực đơn</a>
         @endif
         <a href="{{ route('ban.index') }}" class="block rounded-xl px-3 py-2 text-sm">Bàn & QR</a>
-        @if(in_array(session('chuc_vu'), ['admin', 'quan_ly']))
+        @if(in_array(session('chuc_vu'), ['superadmin', 'admin']))
             <a href="{{ route('nhanvien.index') }}" class="block rounded-xl px-3 py-2 text-sm">Nhân viên & quyền</a>
+            <a href="{{ route('khachhang.index') }}" class="block rounded-xl px-3 py-2 text-sm">Khách hàng</a>
+            <a href="{{ route('scanlog.index') }}" class="block rounded-xl px-3 py-2 text-sm">Log quét QR</a>
         @endif
     </div>
 

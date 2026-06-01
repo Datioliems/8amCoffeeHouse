@@ -20,6 +20,10 @@
                 Quay lại Tồn kho
             </a>
             <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $meta['class'] }}">{{ $meta['label'] }}</span>
+            <a href="{{ route('invoice.import', $import->ma_pnk) }}" target="_blank"
+               class="ml-2 rounded-xl bg-[#8B5A2B] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6F4621]">
+                In hóa đơn nhập
+            </a>
         </div>
 
         @if($import->trang_thai === 'cho_duyet')

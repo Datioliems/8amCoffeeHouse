@@ -9,13 +9,32 @@ class TonKhoSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('TON_KHO')->insertOrIgnore([
-            ['ma_chi_nhanh' => 'CN001', 'ma_nl' => 'NL001', 'sl_ton_kho_he_thong' => 5000.00, 'sl_ton_kho_thuc_te' => 5000.00, 'nguong_canh_bao' => 500.00, 'hao_hut_cost' => 0],
-            ['ma_chi_nhanh' => 'CN001', 'ma_nl' => 'NL002', 'sl_ton_kho_he_thong' => 3000.00, 'sl_ton_kho_thuc_te' => 3000.00, 'nguong_canh_bao' => 300.00, 'hao_hut_cost' => 0],
-            ['ma_chi_nhanh' => 'CN001', 'ma_nl' => 'NL003', 'sl_ton_kho_he_thong' => 15000.00, 'sl_ton_kho_thuc_te' => 15000.00, 'nguong_canh_bao' => 1500.00, 'hao_hut_cost' => 0],
-            ['ma_chi_nhanh' => 'CN001', 'ma_nl' => 'NL004', 'sl_ton_kho_he_thong' => 5000.00, 'sl_ton_kho_thuc_te' => 5000.00, 'nguong_canh_bao' => 500.00, 'hao_hut_cost' => 0],
-            ['ma_chi_nhanh' => 'CN001', 'ma_nl' => 'NL005', 'sl_ton_kho_he_thong' => 50000.00, 'sl_ton_kho_thuc_te' => 50000.00, 'nguong_canh_bao' => 5000.00, 'hao_hut_cost' => 0],
-            ['ma_chi_nhanh' => 'CN001', 'ma_nl' => 'NL006', 'sl_ton_kho_he_thong' => 3000.00, 'sl_ton_kho_thuc_te' => 3000.00, 'nguong_canh_bao' => 300.00, 'hao_hut_cost' => 0],
-        ]);
+        // Mức tồn mẫu theo từng nguyên liệu
+        $mau = [
+            'NL001' => [5000.00, 500.00],
+            'NL002' => [3000.00, 300.00],
+            'NL003' => [15000.00, 1500.00],
+            'NL004' => [5000.00, 500.00],
+            'NL005' => [50000.00, 5000.00],
+            'NL006' => [3000.00, 300.00],
+        ];
+
+        // Seed tồn kho cho TẤT CẢ chi nhánh × nguyên liệu (tránh chi nhánh mới bị "thiếu" giả)
+        $branches    = DB::table('CHI_NHANH')->pluck('ma_chi_nhanh');
+        $nguyenLieus = DB::table('NGUYEN_LIEU')->pluck('ma_nl');
+
+        foreach ($branches as $cn) {
+            foreach ($nguyenLieus as $nl) {
+                [$ton, $nguong] = $mau[$nl] ?? [1000.00, 100.00];
+                DB::table('TON_KHO')->insertOrIgnore([
+                    'ma_chi_nhanh'        => $cn,
+                    'ma_nl'               => $nl,
+                    'sl_ton_kho_he_thong' => $ton,
+                    'sl_ton_kho_thuc_te'  => $ton,
+                    'nguong_canh_bao'     => $nguong,
+                    'hao_hut_cost'        => 0,
+                ]);
+            }
+        }
     }
 }

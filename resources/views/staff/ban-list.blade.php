@@ -12,19 +12,17 @@
         'dong' => $bans->where('trang_thai', 'dong')->count(),
     ];
     $totalSeats = $bans->sum(fn($ban) => $ban->so_ghe ?? 4);
-    $occupiedSeats = $bans->where('trang_thai', 'co_khach')->sum(fn($ban) => $ban->so_ghe ?? 4);
-    $positions = [
-        ['top' => '18%', 'left' => '16%'], ['top' => '32%', 'left' => '38%'],
-        ['top' => '18%', 'left' => '66%'], ['top' => '52%', 'left' => '20%'],
-        ['top' => '56%', 'left' => '55%'], ['top' => '72%', 'left' => '76%'],
-        ['top' => '74%', 'left' => '34%'], ['top' => '38%', 'left' => '78%'],
-    ];
+    // Bàn coi như "có khách" nếu cờ trạng thái co_khach hoặc có order đang xử lý
+    $isOccupied = fn($ban) => $ban->trang_thai === 'co_khach' || (($orderCounts[$ban->ma_ban] ?? 0) > 0);
+    $occupiedSeats = $bans->filter($isOccupied)->sum(fn($ban) => $ban->so_ghe ?? 4);
     $statusMeta = [
-        'trong' => ['label' => 'Trống', 'dot' => 'bg-[#CADCAC]', 'pill' => 'bg-green-100 text-green-800'],
-        'co_khach' => ['label' => 'Có khách', 'dot' => 'bg-[#E82C2A]', 'pill' => 'bg-[#ffdad4] text-[#93000b]'],
-        'dat_truoc' => ['label' => 'Đặt trước', 'dot' => 'bg-[#80534a]', 'pill' => 'bg-[#ffc4b9] text-[#653c34]'],
-        'dong' => ['label' => 'Đóng', 'dot' => 'bg-[#916f6b]', 'pill' => 'bg-gray-100 text-gray-500'],
+        'trong' => ['label' => 'Trống', 'dot' => 'bg-[#CADCAC]', 'pill' => 'bg-green-100 text-green-800', 'iso' => '#CADCAC'],
+        'co_khach' => ['label' => 'Có khách', 'dot' => 'bg-[#E82C2A]', 'pill' => 'bg-[#ffdad4] text-[#93000b]', 'iso' => '#E82C2A'],
+        'dat_truoc' => ['label' => 'Đặt trước', 'dot' => 'bg-[#80534a]', 'pill' => 'bg-[#ffc4b9] text-[#653c34]', 'iso' => '#80534a'],
+        'dong' => ['label' => 'Đóng', 'dot' => 'bg-[#916f6b]', 'pill' => 'bg-gray-100 text-gray-500', 'iso' => '#916f6b'],
     ];
+    // Nhóm bàn theo tầng (vi_tri) để vẽ sơ đồ isometric
+    $bansByFloor = $bans->groupBy(fn($b) => $b->vi_tri ?: 'Khác');
 @endphp
 
 <div class="max-w-7xl space-y-6">
@@ -39,46 +37,74 @@
         </div>
     </div>
 
+    @if(session('chuc_vu') === 'superadmin' && $chiNhanh)
+    {{-- Super-admin sửa thông tin chi nhánh ngay trên giao diện --}}
+    <form method="POST" action="{{ route('chinhanh.update', $chiNhanh->ma_chi_nhanh) }}"
+          class="grid gap-3 rounded-[20px] border border-[#522C25]/10 bg-white p-4 md:grid-cols-[1fr_1fr_auto]">
+        @csrf @method('PUT')
+        <div>
+            <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#522C25]/55">Tên chi nhánh</label>
+            <input name="ten_chi_nhanh" value="{{ $chiNhanh->ten_chi_nhanh }}" required
+                   class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm">
+        </div>
+        <div>
+            <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#522C25]/55">Địa chỉ</label>
+            <input name="dia_chi" value="{{ $chiNhanh->dia_chi }}"
+                   class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm">
+        </div>
+        <div class="flex items-end">
+            <button class="rounded-xl bg-[#1A1A1A] px-4 py-2 text-sm font-semibold text-white">Lưu chi nhánh</button>
+        </div>
+    </form>
+    @endif
+
     <section class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_360px]">
-        <div class="relative min-h-[500px] overflow-hidden rounded-[25px] border border-[#e6bdb8]/40 bg-[#fcf9f8] p-6 shadow-sm">
-            <div class="absolute left-6 top-6 z-10 flex flex-wrap gap-2">
-                <span class="rounded-full border border-[#E82C2A]/20 bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#E82C2A] backdrop-blur">
-                    Live floor plan
+        @php $floorNames = $bansByFloor->keys()->values(); @endphp
+        <div class="rounded-[25px] border border-[#e6bdb8]/40 bg-[#fcf9f8] p-6 shadow-sm"
+             x-data="{ fi: 0, total: {{ $floorNames->count() }} }">
+
+            {{-- Header + chuyển tầng (◀ trước / sau ▶) cho chi nhánh nhiều tầng --}}
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <span class="rounded-full border border-[#E82C2A]/20 bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#E82C2A]">
+                    Sơ đồ bàn
                 </span>
-                <span class="rounded-full border border-[#522C25]/10 bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#522C25]/60 backdrop-blur">
-                    Placeholder isometric
-                </span>
+                @if($floorNames->count() > 1)
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="fi = (fi - 1 + total) % total"
+                            class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg font-bold text-[#522C25] ring-1 ring-[#522C25]/15 transition hover:bg-[#F2F2F2]">‹</button>
+                    <span class="min-w-[88px] text-center text-sm font-bold text-[#522C25]"
+                          x-text="['{{ $floorNames->implode("','") }}'][fi]"></span>
+                    <button type="button" @click="fi = (fi + 1) % total"
+                            class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg font-bold text-[#522C25] ring-1 ring-[#522C25]/15 transition hover:bg-[#F2F2F2]">›</button>
+                </div>
+                @endif
             </div>
 
-            <div class="flex h-full min-h-[452px] items-center justify-center rounded-[25px] bg-white p-6 ring-1 ring-[#522C25]/10">
-                <div class="relative aspect-square w-full max-w-2xl overflow-hidden rounded-[28px] border border-dashed border-[#916f6b]/35 bg-[#F6F3F2]">
-                    <div class="absolute inset-8 rounded-[24px] border border-[#522C25]/10 bg-[#FCFAFA]"></div>
-                    <div class="absolute left-[12%] top-[12%] h-[76%] w-[18%] rounded-2xl bg-[#522C25]/10"></div>
-                    <div class="absolute right-[10%] top-[16%] h-[18%] w-[28%] rounded-full bg-[#E82C2A]/10"></div>
-                    <div class="absolute bottom-[12%] right-[12%] grid grid-cols-2 gap-3">
-                        <span class="h-14 w-14 rounded-xl bg-white shadow-sm"></span>
-                        <span class="h-14 w-14 rounded-xl bg-white shadow-sm"></span>
-                        <span class="h-14 w-14 rounded-xl bg-white shadow-sm"></span>
-                        <span class="h-14 w-14 rounded-xl bg-white shadow-sm"></span>
-                    </div>
-                    <div class="absolute inset-0 bg-[linear-gradient(135deg,rgba(82,44,37,0.06)_25%,transparent_25%,transparent_50%,rgba(82,44,37,0.06)_50%,rgba(82,44,37,0.06)_75%,transparent_75%,transparent)] bg-[length:28px_28px] opacity-40"></div>
-
-                    @foreach($bans->take(8) as $index => $ban)
-                    @php
-                        $pos = $positions[$index % count($positions)];
-                        $meta = $statusMeta[$ban->trang_thai] ?? $statusMeta['dong'];
-                    @endphp
-                    <a href="#table-{{ $ban->ma_ban }}"
-                       class="absolute flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-white text-[11px] font-bold text-[#1A1A1A] shadow-lg transition hover:scale-110 {{ $meta['dot'] }}"
-                       style="top: {{ $pos['top'] }}; left: {{ $pos['left'] }};">
-                        B{{ $ban->so_ban }}
-                    </a>
-                    @endforeach
-
-                    <div class="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/90 p-4 text-sm text-[#522C25]/65 backdrop-blur">
-                        Khu vực này là placeholder cho bản đồ isometric. Khi có asset thật, có thể thay trực tiếp phần nền và giữ hotspot bàn hiện tại.
+            {{-- Sơ đồ bàn nhìn trực diện — mỗi tầng 1 lưới thẻ bàn --}}
+            <div class="rounded-[20px] bg-white p-5 ring-1 ring-[#522C25]/10">
+                @foreach($floorNames as $idx => $floor)
+                @php $floorBans = $bansByFloor[$floor]; @endphp
+                <div x-show="fi === {{ $idx }}" x-cloak>
+                    <p class="mb-3 text-sm font-bold text-[#522C25]/70">{{ $floor }} · {{ $floorBans->count() }} bàn</p>
+                    <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+                        @foreach($floorBans as $ban)
+                        @php
+                            $occupied = $ban->trang_thai === 'co_khach' || (($orderCounts[$ban->ma_ban] ?? 0) > 0);
+                            $meta = $occupied ? $statusMeta['co_khach'] : ($statusMeta[$ban->trang_thai] ?? $statusMeta['trong']);
+                        @endphp
+                        <a href="#table-{{ $ban->ma_ban }}"
+                           class="flex flex-col items-center justify-center rounded-2xl border border-white/70 px-2 py-4 text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                           style="background: {{ $meta['iso'] }};"
+                           title="Bàn {{ $ban->so_ban }} · {{ $ban->so_ghe ?? 4 }} ghế · {{ $meta['label'] }}">
+                            <span class="text-lg font-bold">B{{ $ban->so_ban }}</span>
+                            <span class="mt-0.5 text-[11px] font-medium opacity-95">{{ $ban->so_ghe ?? 4 }} ghế</span>
+                            <span class="mt-1 rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-semibold">{{ $meta['label'] }}</span>
+                        </a>
+                        @endforeach
                     </div>
                 </div>
+                @endforeach
+                <p class="mt-4 text-xs text-[#522C25]/50">Màu đỏ = có khách/đang order · xanh = trống · nâu = đặt trước. Bấm vào bàn để tới hàng cấu hình bên dưới.</p>
             </div>
         </div>
 

@@ -22,8 +22,8 @@
                 <thead class="bg-gray-50 text-xs uppercase text-gray-500">
                     <tr>
                         <th class="px-4 py-3 text-left">Mã phiếu</th>
-                        <th class="px-4 py-3 text-left">Ngày kiểm kê</th>
-                        <th class="px-4 py-3 text-left">Nhân viên</th>
+                        <th class="px-4 py-3 text-left">Thời gian kiểm kê</th>
+                        <th class="px-4 py-3 text-left">Người kiểm kê</th>
                         <th class="px-4 py-3 text-left">Trạng thái</th>
                         <th class="px-4 py-3 text-right">Thao tác</th>
                     </tr>
@@ -32,7 +32,7 @@
                     @forelse($checks as $check)
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-3 font-mono text-gray-500">{{ $check->ma_pkk }}</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $check->ngay_kk }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $check->thoi_gian_kk ? \Carbon\Carbon::parse($check->thoi_gian_kk)->format('d/m/Y H:i') : $check->ngay_kk }}</td>
                         <td class="px-4 py-3 text-gray-700">{{ $check->nhanVien->ten_nv ?? '-' }}</td>
                         <td class="px-4 py-3">
                             @if($check->trang_thai === 'nhap')

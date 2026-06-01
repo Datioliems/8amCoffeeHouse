@@ -19,6 +19,9 @@ use App\Http\Controllers\NhanVienController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
+// Cấp lại CSRF token cho client khi gặp 419 (dùng bởi giỏ hàng khách)
+Route::get('/csrf-token', fn() => response()->json(['token' => csrf_token()]))->name('csrf.token');
+
 // ── CUSTOMER ──────────────────────────────────────────────────
 Route::prefix('order')->name('customer.')->group(function () {
     Route::get('/{ma_ban}',                    [QrController::class,    'scan']             )->name('scan');
@@ -52,14 +55,25 @@ Route::middleware(['auth.staff'])->group(function () {
     Route::post('/floorplan/move/{from}/{to}',  [BanController::class, 'moveTable'] )->name('floorplan.move');
 
     // Super-admin đổi chi nhánh đang xem
-    Route::post('/chi-nhanh/doi', [ChiNhanhController::class, 'switch'])->middleware('role:admin')->name('chinhanh.switch');
+    Route::post('/chi-nhanh/doi', [ChiNhanhController::class, 'switch'])->middleware('role:superadmin')->name('chinhanh.switch');
+    // Super-admin sửa thông tin chi nhánh (tên, địa chỉ, model 3D)
+    Route::put('/chi-nhanh/{ma_chi_nhanh}', [ChiNhanhController::class, 'update'])->middleware('role:superadmin')->name('chinhanh.update');
 
-    // ── QUẢN LÝ TÀI KHOẢN NHÂN VIÊN (admin + quản lý) ────────
-    Route::middleware('role:admin,quan_ly')->prefix('nhan-vien')->name('nhanvien.')->group(function () {
-        Route::get('/',                [NhanVienController::class, 'index'] )->name('index');
-        Route::post('/',               [NhanVienController::class, 'store'] )->name('store');
-        Route::put('/{ma_tai_khoan}',  [NhanVienController::class, 'update'])->name('update');
+    // ── QUẢN LÝ TÀI KHOẢN NHÂN VIÊN (superadmin + admin chi nhánh) ────────
+    Route::middleware('role:superadmin,admin')->prefix('nhan-vien')->name('nhanvien.')->group(function () {
+        Route::get('/',                 [NhanVienController::class, 'index'] )->name('index');
+        Route::post('/',                [NhanVienController::class, 'store'] )->name('store');
+        Route::put('/{ma_tai_khoan}',   [NhanVienController::class, 'update'])->name('update');
+        Route::delete('/{ma_tai_khoan}',[NhanVienController::class, 'destroy'])->name('destroy');
     });
+
+    // ── DANH SÁCH KHÁCH HÀNG (superadmin + admin) ────────────
+    Route::middleware('role:superadmin,admin')->prefix('khach-hang')->name('khachhang.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\KhachHangController::class, 'index'])->name('index');
+    });
+
+    // ── LOG QUÉT QR (superadmin + admin) ─────────────────────
+    Route::middleware('role:superadmin,admin')->get('/scan-log', [QrController::class, 'scanLog'])->name('scanlog.index');
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/',                      [OrderController::class, 'index']       )->name('index');
@@ -78,7 +92,11 @@ Route::middleware(['auth.staff'])->group(function () {
         Route::post('/{ma_order}', [PaymentController::class, 'process'])->name('process');
     });
 
-    Route::middleware(['role:quan_ly'])->prefix('menu')->name('menu.')->group(function () {
+    // ── HÓA ĐƠN IN (bán hàng / nhập kho) ─────────────────────
+    Route::get('/hoa-don/{ma_order}/in', [\App\Http\Controllers\InvoiceController::class, 'sale'])->name('invoice.sale');
+    Route::get('/phieu-nhap/{id}/in',    [\App\Http\Controllers\InvoiceController::class, 'import'])->name('invoice.import');
+
+    Route::middleware(['role:superadmin,admin'])->prefix('menu')->name('menu.')->group(function () {
         Route::get('/',              [MenuController::class, 'index']  )->name('index');
         Route::get('/out-of-stock',  [MenuController::class, 'outOfStock'])->name('out-of-stock');
         Route::get('/create',        [MenuController::class, 'create'] )->name('create');

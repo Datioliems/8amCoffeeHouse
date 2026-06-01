@@ -53,16 +53,17 @@
                 <p class="font-mono font-semibold text-gray-900">{{ $check->ma_pkk }}</p>
             </div>
             <div>
-                <p class="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-gray-400">Ngày kiểm kê</p>
-                <p class="font-semibold text-gray-900">{{ $check->ngay_kk }}</p>
+                <p class="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-gray-400">Thời gian kiểm kê</p>
+                <p class="font-semibold text-gray-900">{{ $check->thoi_gian_kk ? \Carbon\Carbon::parse($check->thoi_gian_kk)->format('d/m/Y H:i:s') : $check->ngay_kk }}</p>
             </div>
             <div>
-                <p class="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-gray-400">Nhân viên</p>
+                <p class="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-gray-400">Người kiểm kê</p>
                 <p class="font-semibold text-gray-900">{{ $check->nhanVien->ten_nv ?? 'Chưa rõ' }}</p>
             </div>
             <div>
-                <p class="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-gray-400">Số dòng</p>
-                <p class="font-semibold text-gray-900">{{ $check->chiTietKiemKes->count() }} nguyên liệu</p>
+                <p class="mb-1 text-xs font-medium uppercase tracking-[0.12em] text-gray-400">Kho / chi nhánh</p>
+                <p class="font-semibold text-gray-900">{{ $check->chiNhanh->ten_chi_nhanh ?? $check->ma_chi_nhanh }}</p>
+                <p class="text-xs text-gray-400">{{ $check->chiTietKiemKes->count() }} nguyên liệu</p>
             </div>
         </div>
 

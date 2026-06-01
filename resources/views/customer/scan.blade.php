@@ -12,6 +12,8 @@
 
         <div class="am-welcome-reveal absolute bottom-0 z-20 flex w-full flex-col items-center gap-4 px-2 pb-6 opacity-0">
             <div class="w-full text-center">
+                <img src="{{ asset('images/latte.jpg') }}" alt="8AM Coffee"
+                     class="mx-auto mb-4 h-28 w-full max-w-xs rounded-3xl object-cover shadow-md ring-1 ring-[#522C25]/10">
                 <p class="am-mono mb-3 text-xs uppercase tracking-[0.18em] text-[#522C25]/55">
                     Bàn {{ str_pad($ban->so_ban, 2, '0', STR_PAD_LEFT) }} · {{ $ban->vi_tri }}
                 </p>
@@ -21,11 +23,14 @@
 
             <form method="POST" action="{{ route('customer.create', $ban->ma_ban) }}" class="w-full space-y-3">
                 @csrf
-                <input type="text" name="ten_kh" placeholder="Nhập tên của bạn" required value="{{ old('ten_kh') }}"
+                <input type="text" name="ten_kh" placeholder="Nhập tên của bạn" required value="{{ old('ten_kh', $profile['ten_kh'] ?? '') }}"
                        class="am-mono w-full rounded-3xl border-0 bg-[#F2F2F2] px-6 py-4 text-center text-sm text-[#1A1A1A] placeholder:text-[#5D3F3C]/45 focus:ring-2 focus:ring-[#E82C2A]">
                 @error('ten_kh') <p class="text-center text-xs text-[#BB0011]">{{ $message }}</p> @enderror
-                <input type="text" name="sdt_kh" placeholder="Số điện thoại" value="{{ old('sdt_kh') }}"
+                <input type="text" name="sdt_kh" placeholder="Số điện thoại" value="{{ old('sdt_kh', $profile['sdt_kh'] ?? '') }}"
                        class="am-mono w-full rounded-3xl border-0 bg-[#F2F2F2] px-6 py-4 text-center text-sm text-[#1A1A1A] placeholder:text-[#5D3F3C]/45 focus:ring-2 focus:ring-[#E82C2A]">
+                <p class="px-2 text-center text-xs leading-5 text-[#5D3F3C]/70">
+                    Bạn có thể nhập số điện thoại để tham gia danh sách khách hàng và nhận khuyến mãi trong tương lai.
+                </p>
                 @error('sdt_kh') <p class="text-center text-xs text-[#BB0011]">{{ $message }}</p> @enderror
                 <button type="submit"
                         class="am-headline flex w-full items-center justify-center gap-3 rounded-full bg-[#E82C2A] px-6 py-4 text-xl font-semibold text-white shadow-lg transition hover:bg-[#BB0011] active:scale-95">

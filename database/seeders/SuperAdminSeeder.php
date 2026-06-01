@@ -17,7 +17,7 @@ class SuperAdminSeeder extends Seeder
         );
         DB::table('TAI_KHOAN')->updateOrInsert(
             ['ma_tai_khoan' => 'TK000'],
-            ['ten_tk' => 'superadmin', 'mat_khau' => Hash::make('Admin@123'), 'chuc_vu' => 'admin', 'trang_thai' => 'active', 'ma_nv' => 'NV000']
+            ['ten_tk' => 'superadmin', 'mat_khau' => Hash::make('Admin@123'), 'chuc_vu' => 'superadmin', 'trang_thai' => 'active', 'ma_nv' => 'NV000']
         );
     }
 }

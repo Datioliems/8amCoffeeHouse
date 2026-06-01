@@ -14,16 +14,15 @@ class StoreOrderRequest extends FormRequest
             return false;
         }
 
-        $ban = Ban::find($maBan);
-
-        // Bàn phải tồn tại và ở trạng thái "trong" (chưa có khách)
-        return $ban !== null && $ban->trang_thai === 'trong';
+        // Bàn chỉ cần tồn tại — một bàn có thể có nhiều lượt khách/đơn,
+        // không chặn khi bàn đang "có khách" để tránh lỗi truy cập khi quét lại.
+        return Ban::where('ma_ban', $maBan)->exists();
     }
 
     protected function failedAuthorization(): never
     {
         throw new \Illuminate\Auth\Access\AuthorizationException(
-            'Bàn này không tồn tại hoặc hiện đang có khách.'
+            'Bàn này không tồn tại.'
         );
     }
 

@@ -20,9 +20,7 @@ function initFloorplan(root) {
     const canvasWrap = root.querySelector('#fp-canvas');
     const infoEl     = root.querySelector('#fp-info');
     const apiUrl     = root.dataset.tablesUrl;
-    const moveTpl    = root.dataset.moveUrl;            // .../move/__FROM__/__TO__
     const modelUrl   = root.dataset.modelUrl;
-    const csrf       = document.querySelector('meta[name=csrf-token]')?.content;
 
     // ── scene / camera / renderer ──────────────────────────────
     const scene = new THREE.Scene();
@@ -56,7 +54,7 @@ function initFloorplan(root) {
 
     // ── load model ─────────────────────────────────────────────
     const draco = new DRACOLoader();
-    draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    draco.setDecoderPath('/draco/');   // host nội bộ — chạy được kể cả offline/bị chặn CDN
     const loader = new GLTFLoader();
     loader.setDRACOLoader(draco);
 
@@ -128,37 +126,19 @@ function initFloorplan(root) {
     });
 
     // ── panel thông tin bàn ────────────────────────────────────
+    // Nhân viên chỉ cần biết: số ghế + bàn trống/có khách (không chọn/đổi bàn).
     function showInfo(ma) {
         const t = statusData[ma] || {};
         const conf = STATUS[t.trang_thai] || STATUS.trong;
         const hex = '#' + conf.color.toString(16).padStart(6, '0');
-        const free = t.trang_thai === 'trong';
         infoEl.innerHTML = `
             <div class="text-lg font-bold text-gray-800">Bàn ${t.so_ban ?? ma}</div>
             <div class="text-xs text-gray-400">${t.vi_tri ?? ''} • ${ma}</div>
             <div class="mt-3">
               <span class="inline-block px-3 py-1 rounded-full text-white text-xs font-medium" style="background:${hex}">${conf.label}</span>
             </div>
-            <div class="mt-2 text-sm text-gray-600">${t.orders ?? 0} order đang mở</div>
-            <div class="mt-4 flex flex-col gap-2">
-              <button id="fp-choose" class="px-3 py-2 rounded-lg bg-green-600 text-white text-sm ${free ? '' : 'opacity-40 pointer-events-none'}">Chọn bàn này</button>
-              <button id="fp-move"   class="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm">Đổi sang bàn này</button>
-            </div>`;
-        infoEl.querySelector('#fp-choose').onclick = () => {
-            window.fpCurrentTable = ma;
-            alert('Đã chọn bàn ' + (t.so_ban ?? ma) + ' làm bàn hiện tại.');
-        };
-        infoEl.querySelector('#fp-move').onclick = () => moveTo(ma);
-    }
-
-    async function moveTo(toMa) {
-        const from = window.fpCurrentTable;
-        if (!from) { alert('Chưa có bàn nguồn. Hãy bấm "Chọn bàn này" ở bàn đang ngồi trước.'); return; }
-        if (from === toMa) { alert('Đang là bàn hiện tại.'); return; }
-        const url = moveTpl.replace('__FROM__', from).replace('__TO__', toMa);
-        const r = await fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } });
-        if (r.ok) { window.fpCurrentTable = toMa; await fetchStatus(); alert('Đã đổi sang bàn ' + toMa); }
-        else { alert('Đổi bàn thất bại.'); }
+            <div class="mt-3 text-sm text-gray-700">Số ghế: <b>${t.so_ghe ?? '—'}</b></div>
+            <div class="mt-1 text-sm text-gray-600">${t.orders ?? 0} order đang mở</div>`;
     }
 
     // ── lọc theo tầng (dựa vào vi_tri) ─────────────────────────

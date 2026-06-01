@@ -21,8 +21,27 @@ document.addEventListener('alpine:init', () => {
         checkoutError: '',
 
         init() {
-            this.items = JSON.parse(localStorage.getItem(this.cartKey) || '[]');
+            // Dọn giỏ hàng cũ: chỉ giữ lại giỏ của đơn hiện tại, xóa mọi giỏ đơn khác
+            // để header không còn "lưu đơn cũ" khi khách chuyển bàn/đơn.
+            this.purgeOtherCarts();
+            if (!this.currentOrder) {
+                // Trang chưa có đơn (quét QR / đăng nhập) → giỏ phải trống, xóa luôn giỏ "guest" cũ.
+                localStorage.removeItem('cart_items_guest');
+                this.items = [];
+            } else {
+                this.items = JSON.parse(localStorage.getItem(this.cartKey) || '[]');
+            }
             localStorage.removeItem('cart_items');
+        },
+
+        purgeOtherCarts() {
+            const keep = this.cartKey;
+            const stale = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('cart_items_') && k !== keep) stale.push(k);
+            }
+            stale.forEach(k => localStorage.removeItem(k));
         },
 
         get currentOrder() {
@@ -211,9 +230,45 @@ document.addEventListener('alpine:init', () => {
             return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
         },
 
+        // Lấy CSRF token hiện tại (ưu tiên meta), có thể làm mới từ server khi gặp 419.
+        csrfToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        },
+
+        async refreshCsrf() {
+            try {
+                const r = await fetch('/csrf-token', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                if (!r.ok) return this.csrfToken();
+                const data = await r.json();
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta && data.token) meta.setAttribute('content', data.token);
+                return data.token || this.csrfToken();
+            } catch { return this.csrfToken(); }
+        },
+
+        // POST JSON kèm tự động retry 1 lần khi token hết hạn (419 CSRF mismatch).
+        async postJson(url, payload) {
+            let token = this.csrfToken();
+            let response = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
+                body: JSON.stringify(payload),
+            });
+            if (response.status === 419) {
+                token = await this.refreshCsrf();
+                response = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
+                    body: JSON.stringify(payload),
+                });
+            }
+            return response;
+        },
+
         async checkout() {
             const maOrder = document.querySelector('meta[name="ma-order"]')?.content;
-            const token = document.querySelector('meta[name="csrf-token"]')?.content;
 
             if (!maOrder) {
                 this.checkoutError = 'Không tìm thấy mã đơn hàng.';
@@ -229,20 +284,11 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 for (const item of this.items) {
-                    const response = await fetch(`/order/${maOrder}/item`, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': token,
-                        },
-                        body: JSON.stringify({
-                            ma_mon: item.ma_mon,
-                            so_luong: item.qty,
-                            ghi_chu: item.ghi_chu || null,
-                            options: item.options || [],
-                        }),
+                    const response = await this.postJson(`/order/${maOrder}/item`, {
+                        ma_mon: item.ma_mon,
+                        so_luong: item.qty,
+                        ghi_chu: item.ghi_chu || null,
+                        options: item.options || [],
                     });
 
                     if (!response.ok) {
