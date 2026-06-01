@@ -20,8 +20,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libzip-dev libpng-dev libjpeg-dev libfreetype6-dev unzip git \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
  && docker-php-ext-install pdo_mysql bcmath zip gd \
- && a2enmod rewrite \
  && rm -rf /var/lib/apt/lists/*
+
+# Apache: chỉ dùng MỘT MPM (prefork) + bật rewrite
+# Tránh lỗi "AH00534: More than one MPM loaded".
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true; \
+    a2enmod mpm_prefork rewrite
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
