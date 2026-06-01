@@ -6,6 +6,11 @@ PORT="${PORT:-8080}"
 sed -ri "s/^Listen 80\$/Listen ${PORT}/" /etc/apache2/ports.conf || true
 sed -ri "s/:80>/:${PORT}>/" /etc/apache2/sites-available/000-default.conf || true
 
+# Đảm bảo CHỈ một MPM (prefork) ngay lúc chạy — phòng image cache cũ.
+rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* 2>/dev/null || true
+a2enmod mpm_prefork rewrite 2>/dev/null || true
+echo ">> Apache PORT=${PORT} | MPM: $(ls /etc/apache2/mods-enabled/ | grep -i mpm | tr '\n' ' ')"
+
 # Chạy migration với retry — MySQL trên Railway có thể lên chậm hơn app.
 MIGRATED=0
 for i in $(seq 1 20); do
