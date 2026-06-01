@@ -15,10 +15,11 @@ RUN npm run build
 # Stage 2: PHP runtime
 FROM php:8.2-apache
 
-# Extension cần cho Laravel + MySQL
+# Extension cần cho Laravel + MySQL + GD (ext-gd cho simple-qrcode)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libzip-dev unzip git \
- && docker-php-ext-install pdo_mysql bcmath zip \
+        libzip-dev libpng-dev libjpeg-dev libfreetype6-dev unzip git \
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install pdo_mysql bcmath zip gd \
  && a2enmod rewrite \
  && rm -rf /var/lib/apt/lists/*
 
