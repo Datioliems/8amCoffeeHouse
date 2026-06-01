@@ -47,10 +47,16 @@
             </a>
             @endforeach
         </div>
-        <a href="{{ route('menu.create') }}"
-           class="flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-amber-600">
-            + Thêm món
-        </a>
+        <div class="flex shrink-0 items-center gap-2">
+            <a href="{{ route('menu.toppings.index') }}"
+               class="flex items-center gap-1.5 rounded-xl bg-[#1A1A1A] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#522C25]">
+                Quản lý topping
+            </a>
+            <a href="{{ route('menu.create') }}"
+               class="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-amber-600">
+                + Thêm món
+            </a>
+        </div>
         </div>
     </div>
 

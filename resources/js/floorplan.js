@@ -141,13 +141,44 @@ function initFloorplan(root) {
             <div class="mt-1 text-sm text-gray-600">${t.orders ?? 0} order đang mở</div>`;
     }
 
-    // ── lọc theo tầng (dựa vào vi_tri) ─────────────────────────
+    // ── lọc theo tầng (dựa vào vi_tri) + hiệu ứng camera ───────
+    const camGoal = { target: null, zoom: null };
+
+    function setActiveBtn(active) {
+        root.querySelectorAll('[data-floor]').forEach((b) => {
+            const on = b === active;
+            b.classList.toggle('bg-gray-800', on);
+            b.classList.toggle('text-white', on);
+            b.classList.toggle('bg-white', !on);
+            b.classList.toggle('border', !on);
+        });
+    }
+
+    function focusFloor(f) {
+        const shown = [];
+        for (const ma in tables) {
+            const vis = f === 'all' || (statusData[ma]?.vi_tri || '').includes(f);
+            tables[ma].visible = vis;
+            if (vis) shown.push(tables[ma]);
+        }
+        if (f === 'all' || !shown.length) {
+            camGoal.target = new THREE.Vector3(0, 0, 0);
+            camGoal.zoom = 1;
+            return;
+        }
+        // Camera "bay" tới tầng được chọn (pan + zoom mượt)
+        const box = new THREE.Box3();
+        shown.forEach((m) => box.expandByObject(m));
+        camGoal.target = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const extent = Math.max(size.x, size.z, 6);
+        camGoal.zoom = Math.min(2.6, Math.max(1.1, 24 / extent));
+    }
+
     root.querySelectorAll('[data-floor]').forEach((btn) => {
         btn.onclick = () => {
-            const f = btn.dataset.floor;
-            for (const ma in tables) {
-                tables[ma].visible = f === 'all' || (statusData[ma]?.vi_tri || '').includes(f);
-            }
+            setActiveBtn(btn);
+            focusFloor(btn.dataset.floor);
         };
     });
 
@@ -163,6 +194,12 @@ function initFloorplan(root) {
 
     (function animate() {
         requestAnimationFrame(animate);
+        // Hiệu ứng chuyển tầng: lerp mượt target + zoom của camera
+        if (camGoal.target) controls.target.lerp(camGoal.target, 0.1);
+        if (camGoal.zoom != null) {
+            camera.zoom += (camGoal.zoom - camera.zoom) * 0.1;
+            camera.updateProjectionMatrix();
+        }
         controls.update();
         renderer.render(scene, camera);
     })();

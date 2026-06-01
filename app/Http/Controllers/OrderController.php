@@ -119,7 +119,11 @@ class OrderController extends Controller
             ->orderBy('ten_mon')
             ->get();
 
-        return view('staff.order-takeaway', compact('mons'));
+        $toppings = \App\Models\Topping::where('trang_thai', 'active')
+            ->orderBy('ten_topping')
+            ->get();
+
+        return view('staff.order-takeaway', compact('mons', 'toppings'));
     }
 
     public function storeTakeaway(Request $request)
@@ -132,6 +136,9 @@ class OrderController extends Controller
             'items.*.so_luong' => 'nullable|integer|min:0|max:99',
             'items.*.ghi_chu' => 'nullable|string|max:200',
             'items.*.options' => 'nullable|array|max:20',
+            'items.*.options.*.type'  => 'nullable|string|max:30',
+            'items.*.options.*.value' => 'nullable|string|max:100',
+            'items.*.options.*.price' => 'nullable|integer|min:0',
         ]);
 
         $items = collect($validated['items'])
@@ -174,16 +181,24 @@ class OrderController extends Controller
 
     public function split(Request $request, string $maOrder)
     {
-        $request->validate([
-            'ma_mon'        => 'required|string',
-            'so_luong_tach' => 'required|integer|min:1',
+        $validated = $request->validate([
+            'tach'   => 'required|array',
+            'tach.*' => 'nullable|integer|min:0|max:999',
         ]);
 
+        // Chỉ giữ các món có số lượng tách > 0
+        $picks = collect($validated['tach'])
+            ->filter(fn($q) => (int) $q > 0)
+            ->map(fn($q) => (int) $q)
+            ->all();
+
+        if (empty($picks)) {
+            return back()->withErrors(['split' => 'Vui lòng nhập số lượng cần tách cho ít nhất một món.']);
+        }
+
         try {
-            $maOrderMoi = $this->orderService->split(
-                $maOrder, $request->ma_mon, (int) $request->so_luong_tach
-            );
-            return back()->with('success', "Đã tách thành order mới: {$maOrderMoi}");
+            $maOrderMoi = $this->orderService->splitItems($maOrder, $picks);
+            return back()->with('success', "Đã tách các món sang đơn mới: {$maOrderMoi}");
         } catch (\InvalidArgumentException $e) {
             return back()->withErrors(['split' => $e->getMessage()]);
         }

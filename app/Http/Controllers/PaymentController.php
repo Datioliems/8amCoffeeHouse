@@ -14,7 +14,7 @@ class PaymentController extends Controller
     public function show(string $maOrder)
     {
         // Scope theo chi nhánh của staff đang đăng nhập
-        $order = Order::with(['ban', 'chiTietOrders.mon', 'chiTietOrders.options'])
+        $order = Order::with(['ban', 'chiTietOrders.mon', 'chiTietOrders.options', 'hoaDon'])
             ->where('ma_order', $maOrder)
             ->where('ma_chi_nhanh', (string) session('ma_chi_nhanh', ''))
             ->firstOrFail();
@@ -63,7 +63,8 @@ class PaymentController extends Controller
             return back()->withErrors($e->errors())->withInput();
         }
 
-        return redirect()->route('orders.index')
+        // Ở lại trang thanh toán để hiện kết quả + in hóa đơn (không nhảy về danh sách đơn)
+        return redirect()->route('payment.show', $maOrder)
                          ->with('success', "Thanh toán thành công! Hóa đơn: {$maHoaDon}");
     }
 }

@@ -44,46 +44,44 @@
         </div>
     </section>
 
-    <section class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+    {{-- ── Biểu đồ (Chart.js) ──────────────────────────────────── --}}
+    <section class="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div class="rounded-[2rem] bg-white p-6 ring-1 ring-[#522C25]/10 am-shadow">
-            <div class="mb-5 flex items-center justify-between">
-                <div>
-                    <p class="text-xs uppercase tracking-[0.18em] text-[#522C25]/55">Biểu đồ doanh thu</p>
-                    <h3 class="mt-1 text-lg font-semibold">Doanh thu 7 ngày</h3>
-                </div>
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold">Doanh thu 7 ngày</h3>
                 <span class="rounded-full bg-[#F2F2F2] px-3 py-1 text-xs font-semibold text-[#522C25]/70">VND</span>
             </div>
-            <div class="flex h-56 items-end gap-3">
-                @foreach($doanhThu7Ngay as $point)
-                <div class="flex flex-1 flex-col items-center gap-2">
-                    <div class="flex h-40 w-full items-end rounded-xl bg-[#F6F3F2] px-2">
-                        <div class="w-full rounded-t-lg bg-[#E82C2A]" style="height: {{ max(6, ($point['value'] / $maxRevenue) * 100) }}%"></div>
-                    </div>
-                    <p class="text-[11px] font-medium text-[#522C25]/65">{{ $point['label'] }}</p>
-                    <p class="text-[10px] text-[#522C25]/45">{{ number_format($point['value'] / 1000, 0, ',', '.') }}k</p>
-                </div>
-                @endforeach
-            </div>
+            <div class="h-64"><canvas id="chart-revenue7"></canvas></div>
         </div>
-
         <div class="rounded-[2rem] bg-white p-6 ring-1 ring-[#522C25]/10 am-shadow">
-            <p class="text-xs uppercase tracking-[0.18em] text-[#522C25]/55">Món nổi bật</p>
-            <h3 class="mt-1 text-lg font-semibold">Món bán chạy hôm nay</h3>
-            <div class="mt-5 space-y-4">
-                @forelse($topMons as $mon)
-                <div>
-                    <div class="mb-1 flex justify-between text-xs">
-                        <span class="font-medium text-[#522C25]/70">{{ $mon->ten_mon }}</span>
-                        <span class="text-[#522C25]/50">{{ $mon->so_luong }}</span>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-full bg-[#F2F2F2]">
-                        <div class="h-full rounded-full bg-[#CADCAC]" style="width: {{ max(8, ($mon->so_luong / $maxTopMon) * 100) }}%"></div>
-                    </div>
-                </div>
-                @empty
-                <p class="text-sm text-[#522C25]/55">Chưa có dữ liệu món hôm nay.</p>
-                @endforelse
-            </div>
+            <h3 class="mb-4 text-lg font-semibold">Phương thức thanh toán</h3>
+            <div class="h-64"><canvas id="chart-payment"></canvas></div>
+        </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div class="rounded-[2rem] bg-white p-6 ring-1 ring-[#522C25]/10 am-shadow">
+            <h3 class="mb-4 text-lg font-semibold">Doanh thu theo giờ (hôm nay)</h3>
+            <div class="h-64"><canvas id="chart-hourly"></canvas></div>
+        </div>
+        <div class="rounded-[2rem] bg-white p-6 ring-1 ring-[#522C25]/10 am-shadow">
+            <h3 class="mb-4 text-lg font-semibold">Đơn theo trạng thái (hôm nay)</h3>
+            <div class="h-64"><canvas id="chart-status"></canvas></div>
+        </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-3">
+        <div class="rounded-[2rem] bg-white p-6 ring-1 ring-[#522C25]/10 am-shadow">
+            <h3 class="mb-4 text-lg font-semibold">Món bán chạy hôm nay</h3>
+            <div class="h-64"><canvas id="chart-topmons"></canvas></div>
+        </div>
+        <div class="rounded-[2rem] bg-white p-6 ring-1 ring-[#522C25]/10 am-shadow">
+            <h3 class="mb-4 text-lg font-semibold">Doanh thu theo danh mục</h3>
+            <div class="h-64"><canvas id="chart-category"></canvas></div>
+        </div>
+        <div class="rounded-[2rem] bg-white p-6 ring-1 ring-[#522C25]/10 am-shadow">
+            <h3 class="mb-4 text-lg font-semibold">Tại chỗ vs Mang về</h3>
+            <div class="h-64"><canvas id="chart-channel"></canvas></div>
         </div>
     </section>
 
@@ -116,4 +114,7 @@
         </div>
     </section>
 </div>
+
+<script type="application/json" id="dashboard-data">@json($chartData)</script>
+@vite('resources/js/dashboard.js')
 @endsection

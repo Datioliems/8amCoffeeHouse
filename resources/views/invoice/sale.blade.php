@@ -6,9 +6,9 @@
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; margin: 0; background: #f3f3f3; }
-        .sheet { max-width: 720px; margin: 16px auto; background: #fff; padding: 0 32px 32px; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
-        .letterhead { width: 100%; display: block; margin: 0 -32px; width: calc(100% + 64px); max-height: 150px; object-fit: cover; }
-        h1 { font-size: 22px; margin: 18px 0 4px; }
+        .sheet { max-width: 720px; margin: 16px auto; background: #fff; padding: 28px 32px 32px; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
+        .brand { font-size: 26px; font-weight: 800; color: #8B5A2B; letter-spacing: .5px; }
+        h1 { font-size: 20px; margin: 14px 0 4px; }
         .muted { color: #666; font-size: 13px; }
         table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 14px; }
         th, td { padding: 9px 8px; border-bottom: 1px solid #eee; text-align: left; }
@@ -32,7 +32,7 @@
 <body>
     <div class="actions"><button class="btn" onclick="window.print()">In hóa đơn</button></div>
     <div class="sheet">
-        <img class="letterhead" src="{{ asset('images/hoadon.webp') }}" alt="8AM Coffee">
+        <div class="brand">8AM Coffee</div>
         <h1>HÓA ĐƠN BÁN HÀNG</h1>
         <p class="muted">{{ $hoaDon->order->chiNhanh->ten_chi_nhanh ?? '8AM Coffee' }}
             @if($hoaDon->order->chiNhanh?->dia_chi) · {{ $hoaDon->order->chiNhanh->dia_chi }} @endif

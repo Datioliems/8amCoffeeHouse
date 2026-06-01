@@ -57,10 +57,22 @@
                     Quay lại thực đơn
                 </a>
             @elseif($order->trang_thai === 'hoan_thanh' || $order->trang_thai === 'da_huy')
+                @if($order->ma_ban)
+                {{-- Tạo đơn mới ngay từ thông tin khách đã lưu rồi vào thẳng thực đơn (không quay lại trang đăng nhập bàn) --}}
+                <form method="POST" action="{{ route('customer.create', $order->ma_ban) }}">
+                    @csrf
+                    <input type="hidden" name="ten_kh" value="{{ session('customer_profile.ten_kh', $order->ten_khach ?: 'Khách') }}">
+                    <input type="hidden" name="sdt_kh" value="{{ session('customer_profile.sdt_kh', $order->sdt_khach) }}">
+                    <button type="submit" class="rounded-full bg-[#E82C2A] px-5 py-2.5 text-sm font-semibold text-white">
+                        Gọi món khác
+                    </button>
+                </form>
+                @else
                 <a href="{{ route('customer.scan', ['ma_ban' => $order->ma_ban]) }}"
                    class="rounded-full bg-[#E82C2A] px-5 py-2.5 text-sm font-semibold text-white">
                     Gọi món khác
                 </a>
+                @endif
             @endif
         </div>
 

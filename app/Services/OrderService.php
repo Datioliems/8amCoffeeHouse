@@ -373,6 +373,89 @@ class OrderService
         });
     }
 
+    /**
+     * Tách NHIỀU món (mỗi món 1 số lượng) ra một đơn mới.
+     * $picks = ['MON001' => 2, 'MON005' => 1, ...]
+     */
+    public function splitItems(string $maOrderGoc, array $picks): string
+    {
+        return DB::transaction(function () use ($maOrderGoc, $picks) {
+            $orderGoc = Order::where('ma_order', $maOrderGoc)->lockForUpdate()->firstOrFail();
+
+            $lines = ChiTietOrder::where('ma_order', $maOrderGoc)
+                ->whereIn('ma_mon', array_keys($picks))
+                ->lockForUpdate()->get()->keyBy('ma_mon');
+
+            $totalGoc  = (int) ChiTietOrder::where('ma_order', $maOrderGoc)->sum('so_luong');
+            $totalTach = array_sum(array_map('intval', $picks));
+
+            if ($totalTach <= 0) {
+                throw new \InvalidArgumentException('Vui lòng chọn ít nhất một món để tách.');
+            }
+            if ($totalTach >= $totalGoc) {
+                throw new \InvalidArgumentException('Phải để lại ít nhất một món ở đơn gốc.');
+            }
+
+            $maOrderMoi = $this->generateUniqueOrderId();
+            Order::create([
+                'ma_order'     => $maOrderMoi,
+                'ma_ban'       => $orderGoc->ma_ban,
+                'ma_kh'        => $orderGoc->ma_kh,
+                'ten_khach'    => $orderGoc->ten_khach,
+                'sdt_khach'    => $orderGoc->sdt_khach,
+                'ma_chi_nhanh' => $orderGoc->ma_chi_nhanh,
+                'trang_thai'   => $orderGoc->trang_thai,
+                'ngay_order'   => now()->toDateString(),
+                'gio_order'    => now()->toTimeString(),
+            ]);
+
+            foreach ($picks as $maMon => $qty) {
+                $qty = (int) $qty;
+                if ($qty <= 0) {
+                    continue;
+                }
+                $itemGoc = $lines->get($maMon);
+                if (!$itemGoc || $qty > $itemGoc->so_luong) {
+                    throw new \InvalidArgumentException('Số lượng tách không hợp lệ cho món ' . $maMon . '.');
+                }
+
+                $chiTietMoi = ChiTietOrder::create([
+                    'ma_order'              => $maOrderMoi,
+                    'ma_mon'                => $maMon,
+                    'so_luong'              => $qty,
+                    'don_gia_tai_thoi_diem' => $itemGoc->don_gia_tai_thoi_diem,
+                    'ghi_chu'               => $itemGoc->ghi_chu,
+                ]);
+
+                // Copy options theo chi_tiet_id để không tính gấp đôi phụ thu
+                foreach (ChiTietOrderOption::where('chi_tiet_id', $itemGoc->id)->get(['loai_option','ten_lua_chon','gia_them']) as $opt) {
+                    ChiTietOrderOption::create([
+                        'chi_tiet_id'  => $chiTietMoi->id,
+                        'ma_order'     => $maOrderMoi,
+                        'ma_mon'       => $maMon,
+                        'loai_option'  => $opt->loai_option,
+                        'ten_lua_chon' => $opt->ten_lua_chon,
+                        'gia_them'     => $opt->gia_them,
+                    ]);
+                }
+
+                if ($qty === (int) $itemGoc->so_luong) {
+                    $itemGoc->delete();              // cascade xóa options dòng gốc
+                } else {
+                    $itemGoc->decrement('so_luong', $qty);
+                }
+            }
+
+            $this->log($maOrderGoc, 'tach_don_goc', data: ['ma_order_moi' => $maOrderMoi, 'picks' => $picks]);
+            $this->log($maOrderMoi, 'tach_don_moi', null, $orderGoc->trang_thai, 'Tao don moi tu thao tac tach don.', [
+                'ma_order_goc' => $maOrderGoc,
+                'picks' => $picks,
+            ]);
+
+            return $maOrderMoi;
+        });
+    }
+
     public function countByStatus(string $maChiNhanh): array
     {
         return Order::where('ma_chi_nhanh', $maChiNhanh)

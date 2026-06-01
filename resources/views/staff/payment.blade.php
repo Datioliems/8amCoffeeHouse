@@ -27,37 +27,52 @@
                 </div>
             </div>
 
-            <div class="mt-4 max-h-[260px] space-y-2 overflow-y-auto pr-1">
-                @foreach($order->chiTietOrders as $item)
-                <div class="rounded-xl border border-[#522C25]/10 bg-[#FAF7F2] p-3 transition hover:border-[#8B5A2B]/30">
-                    <div class="flex items-start justify-between gap-4 text-sm">
-                        <div class="min-w-0">
-                            <p class="truncate font-semibold text-[#1A1A1A]">{{ $item->mon->ten_mon }} x{{ $item->so_luong }}</p>
-                            @if($item->ghi_chu)
-                                <p class="mt-1 text-xs text-[#522C25]/55">{{ $item->ghi_chu }}</p>
-                            @endif
-                        </div>
-                        <p class="shrink-0 font-semibold text-[#522C25]">{{ number_format(($item->don_gia_tai_thoi_diem + $item->options->sum('gia_them')) * $item->so_luong, 0, ',', '.') }}đ</p>
-                    </div>
-
-                    @if($item->so_luong > 1)
-                    <form action="{{ route('orders.split', $order->ma_order) }}" method="POST" class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-                        @csrf
-                        <input type="hidden" name="ma_mon" value="{{ $item->ma_mon }}">
-                        <div>
-                            <label class="mb-1 block text-[11px] font-semibold text-[#522C25]/60">Tách số lượng</label>
-                            <input type="number" name="so_luong_tach" min="1" max="{{ $item->so_luong - 1 }}"
-                                   class="w-full rounded-lg border border-[#522C25]/15 px-3 py-2 text-sm focus:border-[#8B5A2B] focus:ring-[#8B5A2B]">
-                        </div>
-                        <button class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[#8B5A2B] ring-1 ring-[#8B5A2B]/20 transition hover:bg-[#FFF7E8]">
-                            Tách đơn
-                        </button>
-                    </form>
-                    @endif
+            @if($order->hoaDon)
+            {{-- ── Đơn đã thanh toán: hiện kết quả + in hóa đơn ── --}}
+            <div class="mt-5 rounded-2xl border border-green-200 bg-green-50 p-5 text-center">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-600 text-2xl text-white">✓</div>
+                <p class="mt-3 text-lg font-bold text-green-800">Đã thanh toán</p>
+                <p class="mt-1 text-sm text-green-700">Hóa đơn {{ $order->hoaDon->ma_hoa_don }} · {{ number_format($order->hoaDon->tong_tien_sau_ck, 0, ',', '.') }}đ</p>
+                <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <a href="{{ route('invoice.sale', $order->ma_order) }}" target="_blank"
+                       class="rounded-xl bg-[#8B5A2B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#6F4621]">In hóa đơn</a>
+                    <a href="{{ route('orders.index') }}"
+                       class="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#522C25] ring-1 ring-[#522C25]/15 hover:bg-[#F2F2F2]">Về danh sách đơn</a>
                 </div>
-                @endforeach
             </div>
+            @else
+            {{-- ── Danh sách món + TÁCH NHIỀU MÓN (chọn số lượng từng món) ── --}}
+            <form action="{{ route('orders.split', $order->ma_order) }}" method="POST" class="mt-4">
+                @csrf
+                <div class="max-h-[260px] space-y-2 overflow-y-auto pr-1">
+                    @foreach($order->chiTietOrders as $item)
+                    <div class="rounded-xl border border-[#522C25]/10 bg-[#FAF7F2] p-3">
+                        <div class="flex items-start justify-between gap-4 text-sm">
+                            <div class="min-w-0">
+                                <p class="truncate font-semibold text-[#1A1A1A]">{{ $item->mon->ten_mon }} <span class="text-[#522C25]/60">x{{ $item->so_luong }}</span></p>
+                                @if($item->ghi_chu)
+                                    <p class="mt-1 text-xs text-[#522C25]/55">{{ $item->ghi_chu }}</p>
+                                @endif
+                            </div>
+                            <div class="flex shrink-0 items-center gap-3">
+                                <p class="font-semibold text-[#522C25]">{{ number_format(($item->don_gia_tai_thoi_diem + $item->options->sum('gia_them')) * $item->so_luong, 0, ',', '.') }}đ</p>
+                                <div class="flex items-center gap-1">
+                                    <label class="text-[11px] font-semibold text-[#522C25]/55">Tách</label>
+                                    <input type="number" name="tach[{{ $item->ma_mon }}]" min="0" max="{{ $item->so_luong }}" value="0"
+                                           class="w-14 rounded-lg border border-[#522C25]/15 px-2 py-1.5 text-center text-sm focus:border-[#8B5A2B] focus:ring-[#8B5A2B]">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                <button class="mt-2 w-full rounded-lg bg-white py-2 text-sm font-semibold text-[#8B5A2B] ring-1 ring-[#8B5A2B]/20 transition hover:bg-[#FFF7E8]">
+                    Tách các món đã chọn ra đơn mới
+                </button>
+                <p class="mt-1 text-[11px] text-[#522C25]/45">Nhập số lượng cần tách cho từng món (để 0 nếu giữ lại). Phải để lại ít nhất 1 món ở đơn gốc.</p>
+            </form>
 
+            {{-- ── Gộp đơn ── --}}
             <div class="mt-4 rounded-xl border border-[#522C25]/10 bg-[#FAF7F2] p-3">
                 <form action="{{ route('orders.merge', $order->ma_order) }}" method="POST" class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
                     @csrf
@@ -78,6 +93,7 @@
                 </form>
             </div>
 
+            {{-- ── Thanh toán ── --}}
             <form method="POST" action="{{ route('payment.process', $order->ma_order) }}" class="mt-4 border-t border-[#522C25]/10 pt-4">
                 @csrf
                 <div class="grid gap-3 sm:grid-cols-2">
@@ -100,6 +116,7 @@
                     Xác nhận thanh toán
                 </button>
             </form>
+            @endif
         </section>
 
         <aside id="qr-panel" class="hidden rounded-2xl border border-[#522C25]/10 bg-white p-5 shadow-[0_18px_50px_rgba(82,44,37,0.08)] lg:sticky lg:top-6">
@@ -127,6 +144,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const layout = document.getElementById('payment-layout');
     const method = document.getElementById('payment-method');
+    if (!method) return;   // đơn đã thanh toán: không có form, bỏ qua
     const panel = document.getElementById('qr-panel');
     const bankQr = document.getElementById('bank-qr');
     const momoQr = document.getElementById('momo-qr');

@@ -101,6 +101,13 @@ Route::middleware(['auth.staff'])->group(function () {
         Route::get('/out-of-stock',  [MenuController::class, 'outOfStock'])->name('out-of-stock');
         Route::get('/create',        [MenuController::class, 'create'] )->name('create');
         Route::post('/',             [MenuController::class, 'store']  )->name('store');
+
+        // Quản lý topping (đặt trước route wildcard {ma_mon})
+        Route::get('/toppings',                  [\App\Http\Controllers\ToppingController::class, 'index']  )->name('toppings.index');
+        Route::post('/toppings',                 [\App\Http\Controllers\ToppingController::class, 'store']  )->name('toppings.store');
+        Route::put('/toppings/{ma_topping}',     [\App\Http\Controllers\ToppingController::class, 'update'] )->name('toppings.update');
+        Route::delete('/toppings/{ma_topping}',  [\App\Http\Controllers\ToppingController::class, 'destroy'])->name('toppings.destroy');
+
         Route::get('/{ma_mon}/edit', [MenuController::class, 'edit']   )->name('edit');
         Route::put('/{ma_mon}',      [MenuController::class, 'update'] )->name('update');
         Route::put('/{ma_mon}/restore', [MenuController::class, 'restore'])->name('restore');
@@ -109,7 +116,8 @@ Route::middleware(['auth.staff'])->group(function () {
 
     Route::get('/ban',             [BanController::class, 'index']   )->name('ban.index');
     Route::put('/ban/{ma_ban}',    [BanController::class, 'update']  )->name('ban.update');
-    Route::get('/ban/{ma_ban}/qr', [QrController::class, 'generate'] )->name('ban.qr');
+    Route::get('/ban/{ma_ban}/qr',        [QrController::class, 'generate'])->name('ban.qr');
+    Route::get('/ban/{ma_ban}/qr/poster', [QrController::class, 'poster']  )->name('ban.qr.poster');
     Route::post('/ban/{ma_ban}/photo', [BanController::class, 'uploadPhoto'])->name('ban.photo');
 
     Route::prefix('inventory')->name('inventory.')->group(function () {

@@ -58,4 +58,19 @@ class QrController extends Controller
 
         return response($qr)->header('Content-Type', 'image/svg+xml');
     }
+
+    /** Trang poster QR có thương hiệu (in/dán tại bàn). */
+    public function poster(string $maBan)
+    {
+        $ban = Ban::with('chiNhanh')->findOrFail($maBan);
+        // Phạm vi chi nhánh (trừ superadmin)
+        abort_if(
+            session('chuc_vu') !== 'superadmin' && $ban->ma_chi_nhanh !== session('ma_chi_nhanh'),
+            403
+        );
+
+        $url = route('customer.scan', $maBan);
+
+        return view('staff.qr-poster', compact('ban', 'url'));
+    }
 }

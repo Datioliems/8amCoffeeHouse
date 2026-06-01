@@ -4,7 +4,7 @@
     "name": "OrbitControls"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BySnbmdT.css",
+    "file": "assets/app-BwUbwriP.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -14,8 +14,14 @@
     "src": "resources/js/app.js",
     "isEntry": true
   },
+  "resources/js/dashboard.js": {
+    "file": "assets/dashboard-CLy1ogq9.js",
+    "name": "dashboard",
+    "src": "resources/js/dashboard.js",
+    "isEntry": true
+  },
   "resources/js/floorplan.js": {
-    "file": "assets/floorplan-CrZNiEf1.js",
+    "file": "assets/floorplan-BFlP90FH.js",
     "name": "floorplan",
     "src": "resources/js/floorplan.js",
     "isEntry": true,
