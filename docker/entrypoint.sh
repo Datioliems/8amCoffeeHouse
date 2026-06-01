@@ -29,4 +29,9 @@ php artisan config:cache || true
 php artisan route:cache  || true
 php artisan view:cache   || true
 
+# Cấp quyền ghi cho storage/cache (Apache chạy bằng www-data) — sau khi các lệnh
+# artisan chạy bằng root có thể tạo file log/cache thuộc root.
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+
 exec apache2-foreground
