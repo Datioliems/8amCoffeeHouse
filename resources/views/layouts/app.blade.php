@@ -22,29 +22,67 @@
         </div>
     </div>
 
+    @if(session('chuc_vu') === 'admin')
+    @php $__branches = \Illuminate\Support\Facades\DB::table('CHI_NHANH')->orderBy('ma_chi_nhanh')->get(); @endphp
+    <form method="POST" action="{{ route('chinhanh.switch') }}" class="border-b border-[#522C25]/10 px-5 py-3">
+        @csrf
+        <label class="mb-1 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#522C25]/55">Chi nhánh (chủ chuỗi)</label>
+        <select name="ma_chi_nhanh" onchange="this.form.submit()"
+                class="w-full rounded-lg border border-[#522C25]/15 bg-[#F2F2F2] px-2 py-1.5 text-sm">
+            @foreach($__branches as $b)
+            <option value="{{ $b->ma_chi_nhanh }}" {{ session('ma_chi_nhanh') === $b->ma_chi_nhanh ? 'selected' : '' }}>{{ $b->ten_chi_nhanh }}</option>
+            @endforeach
+        </select>
+    </form>
+    @endif
+
     <nav class="flex-1 space-y-1 px-3 py-5">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('dashboard') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('dashboard') ? 'bg-white/15' : 'bg-white' }}">⌂</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('dashboard') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+            </span>
             Tổng quan
         </a>
+        <a href="{{ route('floorplan') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('floorplan') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('floorplan') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="m3 12 9 4 9-4"/><path d="m3 17 9 4 9-4"/></svg>
+            </span>
+            Sơ đồ 3D
+        </a>
         <a href="{{ route('orders.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('orders.*') || request()->routeIs('payment.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('orders.*') || request()->routeIs('payment.*') ? 'bg-white/15' : 'bg-white' }}">□</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('orders.*') || request()->routeIs('payment.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8l2 3h3v15H3V6h3l2-3Z"/><path d="M8 10h8"/><path d="M8 14h5"/></svg>
+            </span>
             Đơn hàng
         </a>
         <a href="{{ route('inventory.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('inventory.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('inventory.*') ? 'bg-white/15' : 'bg-white' }}">▣</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('inventory.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+            </span>
             Kho hàng
         </a>
         @if(session('chuc_vu') === 'quan_ly')
         <a href="{{ route('menu.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('menu.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('menu.*') ? 'bg-white/15' : 'bg-white' }}">☕</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('menu.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z"/><path d="M16 9h2a3 3 0 0 1 0 6h-2"/><path d="M6 2v2"/><path d="M10 2v2"/><path d="M14 2v2"/></svg>
+            </span>
             Thực đơn
         </a>
         @endif
         <a href="{{ route('ban.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('ban.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('ban.*') ? 'bg-white/15' : 'bg-white' }}">◇</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('ban.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h16"/><path d="M6 10l-2 9"/><path d="M18 10l2 9"/><path d="M8 5h8a2 2 0 0 1 2 2v3H6V7a2 2 0 0 1 2-2Z"/></svg>
+            </span>
             Bàn & QR
         </a>
+        @if(in_array(session('chuc_vu'), ['admin', 'quan_ly']))
+        <a href="{{ route('nhanvien.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('nhanvien.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('nhanvien.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            Nhân viên & quyền
+        </a>
+        @endif
     </nav>
 
     <div class="border-t border-[#522C25]/10 p-4">
@@ -84,6 +122,9 @@
             <a href="{{ route('menu.index') }}" class="block rounded-xl px-3 py-2 text-sm">Thực đơn</a>
         @endif
         <a href="{{ route('ban.index') }}" class="block rounded-xl px-3 py-2 text-sm">Bàn & QR</a>
+        @if(in_array(session('chuc_vu'), ['admin', 'quan_ly']))
+            <a href="{{ route('nhanvien.index') }}" class="block rounded-xl px-3 py-2 text-sm">Nhân viên & quyền</a>
+        @endif
     </div>
 
     <section class="p-4 md:p-6">

@@ -214,10 +214,8 @@ class OrderController extends Controller
             ]);
         }
 
-        return redirect()->route('customer.menu', [
-            'ma_ban'   => $maBan,
-            'ma_order' => $maOrder,
-        ]);
+        // Không truyền ma_order qua URL (GET); menu tự suy từ đơn dang_chon của bàn.
+        return redirect()->route('customer.menu', ['ma_ban' => $maBan]);
     }
 
     public function addItem(Request $request, string $maOrder)

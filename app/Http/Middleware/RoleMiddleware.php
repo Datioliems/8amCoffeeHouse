@@ -10,6 +10,10 @@ class RoleMiddleware
     public function handle(Request $request, Closure $next, string ...$roles)
     {
         $chucVu = session('chuc_vu');
+        // Super-admin (chủ chuỗi) bỏ qua mọi kiểm tra vai trò
+        if ($chucVu === 'admin') {
+            return $next($request);
+        }
         if (!in_array($chucVu, $roles)) {
             abort(403, 'Bạn không có quyền truy cập chức năng này.');
         }

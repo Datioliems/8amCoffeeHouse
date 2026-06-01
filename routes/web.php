@@ -14,6 +14,8 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\StockCheckController;
 use App\Http\Controllers\NguyenLieuController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ChiNhanhController;
+use App\Http\Controllers\NhanVienController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -28,6 +30,10 @@ Route::prefix('order')->name('customer.')->group(function () {
     Route::post('/{ma_order}/confirm',         [OrderController::class, 'confirmByCustomer'])->name('confirm');
     Route::get('/{ma_order}/status',           [OrderController::class, 'status']           )->name('status');
     Route::get('/{ma_order}/status.json',      [OrderController::class, 'statusJson']       )->name('statusJson');
+
+    // Sơ đồ bàn 3D cho khách (public, chi nhánh suy từ bàn)
+    Route::get('/{ma_ban}/tables',             [BanController::class,   'apiTablesByBan']   )->name('tables');
+    Route::post('/{ma_ban}/move/{to}',         [BanController::class,   'moveByBan']        )->name('move');
 });
 
 // ── AUTH ──────────────────────────────────────────────────────
@@ -39,6 +45,21 @@ Route::post('/logout', [AuthController::class, 'logout']   )->name('logout');
 Route::middleware(['auth.staff'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // ── SƠ ĐỒ BÀN 3D (Three.js) ──────────────────────────────
+    Route::get('/floorplan',                    [BanController::class, 'floorplan'] )->name('floorplan');
+    Route::get('/floorplan/tables',             [BanController::class, 'apiTables'] )->name('floorplan.tables');
+    Route::post('/floorplan/move/{from}/{to}',  [BanController::class, 'moveTable'] )->name('floorplan.move');
+
+    // Super-admin đổi chi nhánh đang xem
+    Route::post('/chi-nhanh/doi', [ChiNhanhController::class, 'switch'])->middleware('role:admin')->name('chinhanh.switch');
+
+    // ── QUẢN LÝ TÀI KHOẢN NHÂN VIÊN (admin + quản lý) ────────
+    Route::middleware('role:admin,quan_ly')->prefix('nhan-vien')->name('nhanvien.')->group(function () {
+        Route::get('/',                [NhanVienController::class, 'index'] )->name('index');
+        Route::post('/',               [NhanVienController::class, 'store'] )->name('store');
+        Route::put('/{ma_tai_khoan}',  [NhanVienController::class, 'update'])->name('update');
+    });
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/',                      [OrderController::class, 'index']       )->name('index');
@@ -71,6 +92,7 @@ Route::middleware(['auth.staff'])->group(function () {
     Route::get('/ban',             [BanController::class, 'index']   )->name('ban.index');
     Route::put('/ban/{ma_ban}',    [BanController::class, 'update']  )->name('ban.update');
     Route::get('/ban/{ma_ban}/qr', [QrController::class, 'generate'] )->name('ban.qr');
+    Route::post('/ban/{ma_ban}/photo', [BanController::class, 'uploadPhoto'])->name('ban.photo');
 
     Route::prefix('inventory')->name('inventory.')->group(function () {
         Route::get('/',      [InventoryController::class, 'index']   )->name('index');

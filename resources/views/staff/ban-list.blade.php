@@ -134,6 +134,7 @@
                         <th class="px-6 py-4">Order</th>
                         <th class="px-6 py-4">QR</th>
                         <th class="px-6 py-4 text-right">Thao tác</th>
+                        <th class="px-6 py-4">Ảnh bàn</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#522C25]/10">
@@ -172,6 +173,22 @@
                                 </button>
                             </td>
                         </form>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                @if($ban->anh)
+                                    <img src="{{ asset('images/'.$ban->anh) }}?v={{ $ban->updated_at?->timestamp ?? time() }}"
+                                         class="h-12 w-16 rounded-lg object-cover ring-1 ring-[#522C25]/10" alt="Ảnh bàn {{ $ban->so_ban }}">
+                                @else
+                                    <div class="flex h-12 w-16 items-center justify-center rounded-lg bg-[#F2F2F2] text-[10px] text-[#522C25]/40">Chưa có</div>
+                                @endif
+                                <form method="POST" action="{{ route('ban.photo', $ban->ma_ban) }}" enctype="multipart/form-data" class="flex flex-col gap-1">
+                                    @csrf
+                                    <input type="file" name="anh" accept="image/*" required
+                                           class="w-36 text-[11px] file:mr-2 file:rounded-full file:border-0 file:bg-[#522C25]/10 file:px-2 file:py-1 file:text-[11px]">
+                                    <button class="self-start rounded-full bg-[#1A1A1A] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-black">Tải ảnh</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>

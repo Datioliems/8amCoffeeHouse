@@ -38,9 +38,47 @@ class MenuController extends Controller
 
         $danhMucs->each(fn($danhMuc) => $this->availabilityService->annotate($danhMuc->mons, $maChiNhanh));
 
-        $maOrder = request('ma_order');
+        $maOrder = $this->resolveMaOrder($maBan);
+        $model3d = DB::table('CHI_NHANH')->where('ma_chi_nhanh', $ban->ma_chi_nhanh)->value('model_3d') ?: 'cafe_opt.glb';
 
-        return view('customer.menu', compact('ban', 'danhMucs', 'maOrder'));
+        return view('customer.menu', compact('ban', 'danhMucs', 'maOrder', 'model3d'));
+    }
+
+    /** Lấy ma_order: ưu tiên query, nếu thiếu thì tìm đơn đang chọn (dang_chon) của bàn. */
+    private function resolveMaOrder(string $maBan): ?string
+    {
+        return request('ma_order') ?: DB::table('ORDERS')
+            ->where('ma_ban', $maBan)
+            ->where('trang_thai', 'dang_chon')
+            ->orderByDesc('ma_order')
+            ->value('ma_order');
+    }
+
+    /** (Giữ lại) dữ liệu dùng chung cho trang menu khách */
+    private function buildMenuData(string $maBan): array
+    {
+        $ban = Ban::findOrFail($maBan);
+        $maChiNhanh = $ban->ma_chi_nhanh;
+
+        $danhMucs = DanhMuc::with(['mons' => function ($query) {
+            $query->with([
+                'danhMuc',
+                'dinhMucs.nguyenLieu.tonKhos',
+                'options' => fn($query) => $query
+                    ->whereIn('loai_option', ['temperature', 'sweetness', 'topping'])
+                    ->where('trang_thai', 'active')
+                    ->orderBy('loai_option')
+                    ->orderBy('thu_tu'),
+            ])->where('trang_thai', 'active')->orderBy('ten_mon');
+        }])->orderBy('ten_danh_muc')->get();
+
+        $danhMucs->each(fn($danhMuc) => $this->availabilityService->annotate($danhMuc->mons, $maChiNhanh));
+
+        return [
+            'ban' => $ban,
+            'danhMucs' => $danhMucs,
+            'maOrder' => $this->resolveMaOrder($maBan),
+        ];
     }
 
     public function index()

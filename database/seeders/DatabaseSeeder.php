@@ -17,26 +17,34 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Kiểm tra đã seed chưa
-        if (DB::table('CHI_NHANH')->count() > 0) {
-            $this->command->info('Database đã có dữ liệu. Bỏ qua seeder.');
-            return;
+        // Seed dữ liệu nền (chỉ chạy khi DB còn trống)
+        if (DB::table('CHI_NHANH')->count() === 0) {
+            $this->command->info('Chạy seeders nền...');
+            $this->call([
+                ChiNhanhSeeder::class,
+                NhanVienSeeder::class,
+                TaiKhoanSeeder::class,
+                DanhMucSeeder::class,
+                MonSeeder::class,
+                NguyenLieuSeeder::class,
+                BanSeeder::class,
+                NhaCungCapSeeder::class,
+                DinhMucSeeder::class,
+                TonKhoSeeder::class,
+                MenuOptionSeeder::class,
+            ]);
+        } else {
+            $this->command->info('Đã có dữ liệu nền, bỏ qua seeders nền.');
         }
 
-        $this->command->info('Chạy seeders...');
+        // Seeder bổ sung (idempotent - luôn chạy để đảm bảo đủ dữ liệu mới)
+        $this->command->info('Chạy seeders bổ sung (superadmin, chi nhánh demo, bàn)...');
         $this->call([
-            ChiNhanhSeeder::class,
-            NhanVienSeeder::class,
-            TaiKhoanSeeder::class,
-            DanhMucSeeder::class,
-            MonSeeder::class,
-            NguyenLieuSeeder::class,
-            BanSeeder::class,
-            NhaCungCapSeeder::class,
-            DinhMucSeeder::class,
-            TonKhoSeeder::class,
-            MenuOptionSeeder::class,
+            BanSeeder::class,          // 17 bàn + số ghế (updateOrInsert)
+            SuperAdminSeeder::class,   // superadmin / Admin@123
+            ChiNhanh2DemoSeeder::class // CN002 + 6 bàn + manager_hcm
         ]);
+
         $this->command->info('✅ Seed hoàn tất!');
     }
 }

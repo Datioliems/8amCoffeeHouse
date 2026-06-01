@@ -13,7 +13,7 @@
 <body class="min-h-screen bg-[#F6F3F2] text-[#1A1A1A]">
 <main class="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
     <section class="relative hidden overflow-hidden bg-[#1A1A1A] text-white lg:block">
-        <img src="{{ asset('images/cafe_bg.jpg') }}" alt="8AM Coffee" class="absolute inset-0 h-full w-full object-cover opacity-45">
+        <img src="{{ asset('images/8-AM-Coffee-Roastery-16.jpg') }}" alt="8AM Coffee" class="absolute inset-0 h-full w-full object-cover opacity-45">
         <div class="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-[#1A1A1A]/60 to-transparent"></div>
         <div class="relative flex h-full flex-col justify-between p-10">
             <img src="{{ asset('images/logo8am.jpg') }}" alt="8AM Coffee" class="h-16 w-16 rounded-2xl object-cover ring-1 ring-white/20">

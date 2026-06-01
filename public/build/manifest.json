@@ -1,6 +1,10 @@
 {
+  "_OrbitControls-DTVQfa6o.js": {
+    "file": "assets/OrbitControls-DTVQfa6o.js",
+    "name": "OrbitControls"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-B2IKABut.css",
+    "file": "assets/app-aYHVEle0.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -9,5 +13,23 @@
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
+  },
+  "resources/js/floorplan.js": {
+    "file": "assets/floorplan-eQm_ZTIk.js",
+    "name": "floorplan",
+    "src": "resources/js/floorplan.js",
+    "isEntry": true,
+    "imports": [
+      "_OrbitControls-DTVQfa6o.js"
+    ]
+  },
+  "resources/js/showroom.js": {
+    "file": "assets/showroom-BvbNbVXt.js",
+    "name": "showroom",
+    "src": "resources/js/showroom.js",
+    "isEntry": true,
+    "imports": [
+      "_OrbitControls-DTVQfa6o.js"
+    ]
   }
 }
