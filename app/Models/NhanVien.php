@@ -16,10 +16,10 @@ class NhanVien extends Model
 
     // PII mã hóa khi lưu, tự giải mã khi đọc qua Eloquent.
     protected $casts = [
-        'sdt'     => 'encrypted',
-        'email'   => 'encrypted',
-        'cccd'    => 'encrypted',
-        'dia_chi' => 'encrypted',
+        'sdt'     => \App\Casts\EncryptedString::class,
+        'email'   => \App\Casts\EncryptedString::class,
+        'cccd'    => \App\Casts\EncryptedString::class,
+        'dia_chi' => \App\Casts\EncryptedString::class,
     ];
 
     public function chiNhanh()  { return $this->belongsTo(ChiNhanh::class, 'ma_chi_nhanh', 'ma_chi_nhanh'); }

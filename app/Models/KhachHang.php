@@ -16,8 +16,8 @@ class KhachHang extends Model
 
     // PII mã hóa khi lưu, tự giải mã khi đọc.
     protected $casts = [
-        'ten_kh' => 'encrypted',
-        'sdt'    => 'encrypted',
+        'ten_kh' => \App\Casts\EncryptedString::class,
+        'sdt'    => \App\Casts\EncryptedString::class,
     ];
 
     /** Tự sinh blind index sdt_hash mỗi khi lưu (để tra cứu theo SĐT). */
