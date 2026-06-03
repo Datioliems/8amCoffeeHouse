@@ -11,6 +11,20 @@ rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker
 a2enmod mpm_prefork rewrite 2>/dev/null || true
 echo ">> Apache PORT=${PORT} | MPM: $(ls /etc/apache2/mods-enabled/ | grep -i mpm | tr '\n' ' ')"
 
+# Dọn mọi config cache cũ (phòng image/commit có sẵn bootstrap/cache/config.php)
+# để chắc chắn migrate đọc DB_* từ biến môi trường runtime.
+php artisan config:clear || true
+
+# In ra cấu hình DB THẬT mà app đang dùng (ẩn mật khẩu) — để chẩn đoán kết nối.
+php -r '
+  $h = getenv("DB_HOST") ?: "(rong -> se roi ve 127.0.0.1)";
+  $p = getenv("DB_PORT") ?: "(rong)";
+  $d = getenv("DB_DATABASE") ?: "(rong)";
+  $u = getenv("DB_USERNAME") ?: "(rong)";
+  $w = getenv("DB_PASSWORD");
+  echo ">> DB cau hinh: HOST=$h PORT=$p DB=$d USER=$u PASS=" . ($w ? "(co " . strlen($w) . " ky tu)" : "(RONG!)") . "\n";
+'
+
 # Chạy migration với retry — MySQL trên Railway có thể lên chậm hơn app.
 MIGRATED=0
 for i in $(seq 1 20); do
