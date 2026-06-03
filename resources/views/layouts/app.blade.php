@@ -95,6 +95,14 @@
             </span>
             Log quét QR
         </a>
+        @if(session('chuc_vu') === 'superadmin')
+        <a href="{{ route('auditlog.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('auditlog.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('auditlog.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            Nhật ký đăng nhập
+        </a>
+        @endif
         @endif
     </nav>
 
@@ -139,6 +147,9 @@
             <a href="{{ route('nhanvien.index') }}" class="block rounded-xl px-3 py-2 text-sm">Nhân viên & quyền</a>
             <a href="{{ route('khachhang.index') }}" class="block rounded-xl px-3 py-2 text-sm">Khách hàng</a>
             <a href="{{ route('scanlog.index') }}" class="block rounded-xl px-3 py-2 text-sm">Log quét QR</a>
+        @endif
+        @if(session('chuc_vu') === 'superadmin')
+            <a href="{{ route('auditlog.index') }}" class="block rounded-xl px-3 py-2 text-sm">Nhật ký đăng nhập</a>
         @endif
     </div>
 
