@@ -57,7 +57,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         get totalPrice() {
-            return this.items.reduce((sum, i) => sum + i.don_gia * i.qty, 0);
+            return this.items.reduce((sum, i) => {
+                const extra = (i.options || []).reduce((s, o) => s + (Number(o.price) || 0), 0);
+                return sum + (Number(i.don_gia) + extra) * i.qty;
+            }, 0);
         },
 
         get checkoutUrl() {
@@ -96,6 +99,7 @@ document.addEventListener('alpine:init', () => {
                     temperature: mon.options.temperature || [],
                     sweetness: mon.options.sweetness?.length ? mon.options.sweetness : ['0%', '30%', '50%', '70%', '100%'],
                     toppings: mon.options.toppings || [],
+                    topping_prices: mon.options.topping_prices || {},
                 };
             }
 
@@ -169,8 +173,9 @@ document.addEventListener('alpine:init', () => {
             if (this.selectedOptions.sweetness && this.selectedMon.options.sweetness.includes(this.selectedOptions.sweetness)) {
                 options.push({ type: 'sweetness', label: 'Độ ngọt', value: this.selectedOptions.sweetness, price: 0 });
             }
+            const tprices = this.selectedMon.options.topping_prices || {};
             for (const topping of this.selectedOptions.toppings) {
-                options.push({ type: 'topping', label: 'Topping', value: topping, price: 0 });
+                options.push({ type: 'topping', label: 'Topping', value: topping, price: Number(tprices[topping]) || 0 });
             }
             return options;
         },

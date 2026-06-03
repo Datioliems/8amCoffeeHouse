@@ -8,7 +8,7 @@
     "name": "chart"
   },
   "resources/css/app.css": {
-    "file": "assets/app-D0zknyXI.css",
+    "file": "assets/app-CFCsrFrS.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -22,7 +22,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-nGCtfjxn.js",
+    "file": "assets/app-CQ859fhb.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

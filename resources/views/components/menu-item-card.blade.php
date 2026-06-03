@@ -6,6 +6,8 @@
         'temperature' => $mon->options?->where('loai_option', 'temperature')->where('trang_thai', 'active')->pluck('ten_option')->values()->all() ?? [],
         'sweetness' => $mon->options?->where('loai_option', 'sweetness')->where('trang_thai', 'active')->pluck('ten_option')->values()->all() ?? [],
         'toppings' => $mon->options?->where('loai_option', 'topping')->where('trang_thai', 'active')->pluck('ten_option')->values()->all() ?? [],
+        // Bảng giá topping (tên => giá thêm) để cart cộng đúng tiền.
+        'topping_prices' => $mon->options?->where('loai_option', 'topping')->where('trang_thai', 'active')->pluck('gia_them', 'ten_option')->all() ?? [],
     ];
     $optionText = mb_strtolower(($mon->ten_mon ?? '') . ' ' . ($mon->danhMuc?->ten_danh_muc ?? ''));
     if (str_contains($optionText, 'eats') || str_contains($optionText, 'bánh') || str_contains($optionText, 'hạt sen') || str_contains($optionText, 'đồ ăn')) {
