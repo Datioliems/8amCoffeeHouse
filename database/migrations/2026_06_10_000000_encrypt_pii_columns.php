@@ -7,48 +7,67 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Mã hóa PII ngay trên các bảng hiện có (KHACH_HANG, NHAN_VIEN, ORDERS, NHA_CUNG_CAP):
- *   - Đổi cột PII sang TEXT để chứa ciphertext (AES-256-GCM của Laravel Crypt).
- *   - Thêm KHACH_HANG.sdt_hash (blind index) để tra cứu/gộp theo SĐT.
- *   - Mã hóa dữ liệu cũ + điền sdt_hash (idempotent).
- *
- * Đọc/ghi các cột này phải qua Eloquent cast 'encrypted' (model) hoặc Pii::tryDecrypt
- * (với truy vấn Query Builder thô).
+ * Mã hóa PII trên các bảng hiện có (KHACH_HANG, NHAN_VIEN, ORDERS, NHA_CUNG_CAP).
+ * Viết IDEMPOTENT + dùng SQL thô để:
+ *   - Xóa unique index trên cccd trước khi đổi sang TEXT (1170 BLOB/TEXT key length).
+ *   - Chỉ đổi cột khi chưa phải TEXT; chỉ thêm sdt_hash khi chưa có.
+ *   - Chạy lại an toàn dù DB đang ở trạng thái nửa chừng.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        // 1) Mở rộng kiểu cột → TEXT (đủ chứa ciphertext).
-        Schema::table('KHACH_HANG', function (Blueprint $table) {
-            $table->text('ten_kh')->change();
-            $table->text('sdt')->nullable()->change();
-            $table->char('sdt_hash', 64)->nullable()->after('sdt');
-            $table->index('sdt_hash');
-        });
-        Schema::table('NHAN_VIEN', function (Blueprint $table) {
-            $table->text('email')->nullable()->change();
-            $table->text('sdt')->nullable()->change();
-            $table->text('cccd')->nullable()->change();
-            $table->text('dia_chi')->nullable()->change();
-        });
-        Schema::table('ORDERS', function (Blueprint $table) {
-            $table->text('ten_khach')->nullable()->change();
-            $table->text('sdt_khach')->nullable()->change();
-        });
-        Schema::table('NHA_CUNG_CAP', function (Blueprint $table) {
-            $table->text('sdt')->nullable()->change();
-            $table->text('email')->nullable()->change();
-            $table->text('dia_chi')->nullable()->change();
-        });
+        $conn = Schema::getConnection();
+        $db   = $conn->getDatabaseName();
 
-        // 2) Mã hóa dữ liệu cũ + điền blind index.
+        $isText = function (string $table, string $col) use ($conn, $db): bool {
+            $r = $conn->selectOne(
+                "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?",
+                [$db, $table, $col]
+            );
+            return $r && strtolower($r->DATA_TYPE) === 'text';
+        };
+        $indexExists = function (string $table, string $index) use ($conn, $db): bool {
+            return (bool) $conn->selectOne(
+                "SELECT 1 AS x FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND INDEX_NAME=? LIMIT 1",
+                [$db, $table, $index]
+            );
+        };
+
+        // 1) Bỏ UNIQUE index trên cccd (không thể index cột TEXT mà thiếu key length).
+        if ($indexExists('NHAN_VIEN', 'nhan_vien_cccd_unique')) {
+            $conn->statement('ALTER TABLE `NHAN_VIEN` DROP INDEX `nhan_vien_cccd_unique`');
+        }
+
+        // 2) Đổi cột PII sang TEXT (chỉ khi chưa phải text).
+        $cols = [
+            'KHACH_HANG'   => ['ten_kh', 'sdt'],
+            'NHAN_VIEN'    => ['email', 'sdt', 'cccd', 'dia_chi'],
+            'ORDERS'       => ['ten_khach', 'sdt_khach'],
+            'NHA_CUNG_CAP' => ['sdt', 'email', 'dia_chi'],
+        ];
+        foreach ($cols as $t => $cs) {
+            foreach ($cs as $c) {
+                if (! $isText($t, $c)) {
+                    $conn->statement("ALTER TABLE `{$t}` MODIFY `{$c}` TEXT NULL");
+                }
+            }
+        }
+
+        // 3) Thêm blind index sdt_hash (chỉ khi chưa có).
+        if (! Schema::hasColumn('KHACH_HANG', 'sdt_hash')) {
+            Schema::table('KHACH_HANG', function (Blueprint $table) {
+                $table->char('sdt_hash', 64)->nullable()->after('sdt');
+                $table->index('sdt_hash');
+            });
+        }
+
+        // 4) Mã hóa dữ liệu cũ + điền blind index (idempotent: encIfPlain bỏ qua ô đã mã hóa).
         foreach (DB::table('KHACH_HANG')->get() as $r) {
-            $plainSdt = Pii::tryDecrypt($r->sdt);
             DB::table('KHACH_HANG')->where('ma_kh', $r->ma_kh)->update([
                 'ten_kh'   => Pii::encIfPlain($r->ten_kh),
                 'sdt'      => Pii::encIfPlain($r->sdt),
-                'sdt_hash' => Pii::phoneHash($plainSdt),
+                'sdt_hash' => Pii::phoneHash(Pii::tryDecrypt($r->sdt)),
             ]);
         }
         foreach (DB::table('NHAN_VIEN')->get() as $r) {
@@ -59,7 +78,8 @@ return new class extends Migration
                 'dia_chi' => Pii::encIfPlain($r->dia_chi ?? null),
             ]);
         }
-        foreach (DB::table('ORDERS')->whereNotNull('ten_khach')->orWhereNotNull('sdt_khach')->get() as $r) {
+        foreach (DB::table('ORDERS')->get() as $r) {
+            if ($r->ten_khach === null && $r->sdt_khach === null) continue;
             DB::table('ORDERS')->where('ma_order', $r->ma_order)->update([
                 'ten_khach' => Pii::encIfPlain($r->ten_khach),
                 'sdt_khach' => Pii::encIfPlain($r->sdt_khach),
@@ -76,7 +96,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Giải mã trả lại plaintext trước khi thu nhỏ cột (tránh mất dữ liệu).
+        // Giải mã trả lại (best-effort) trước khi thu nhỏ cột.
         foreach (DB::table('KHACH_HANG')->get() as $r) {
             DB::table('KHACH_HANG')->where('ma_kh', $r->ma_kh)->update([
                 'ten_kh' => Pii::tryDecrypt($r->ten_kh),
@@ -104,10 +124,11 @@ return new class extends Migration
                 'dia_chi' => Pii::tryDecrypt($r->dia_chi),
             ]);
         }
-
-        Schema::table('KHACH_HANG', function (Blueprint $table) {
-            $table->dropIndex(['sdt_hash']);
-            $table->dropColumn('sdt_hash');
-        });
+        if (Schema::hasColumn('KHACH_HANG', 'sdt_hash')) {
+            Schema::table('KHACH_HANG', function (Blueprint $table) {
+                $table->dropIndex(['sdt_hash']);
+                $table->dropColumn('sdt_hash');
+            });
+        }
     }
 };
