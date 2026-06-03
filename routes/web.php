@@ -44,6 +44,11 @@ Route::get( '/login',  [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login',  [AuthController::class, 'login']    )->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout']   )->name('logout');
 
+// Xác thực 2 lớp (OTP qua email)
+Route::get( '/otp',        [AuthController::class, 'showOtp']  )->name('otp.show');
+Route::post('/otp',        [AuthController::class, 'verifyOtp'])->name('otp.verify');
+Route::post('/otp/resend', [AuthController::class, 'resendOtp'])->name('otp.resend');
+
 // ── STAFF ─────────────────────────────────────────────────────
 Route::middleware(['auth.staff'])->group(function () {
 
@@ -74,6 +79,9 @@ Route::middleware(['auth.staff'])->group(function () {
 
     // ── LOG QUÉT QR (superadmin + admin) ─────────────────────
     Route::middleware('role:superadmin,admin')->get('/scan-log', [QrController::class, 'scanLog'])->name('scanlog.index');
+
+    // ── NHẬT KÝ ĐĂNG NHẬP / AN TOÀN (chỉ superadmin) ─────────
+    Route::middleware('role:superadmin')->get('/nhat-ky-dang-nhap', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('auditlog.index');
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/',                      [OrderController::class, 'index']       )->name('index');
