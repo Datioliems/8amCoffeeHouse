@@ -121,15 +121,28 @@ class AnalyticsService
      * Lấy "giỏ" mỗi đơn (tập món riêng biệt) trong các đơn hợp lệ gần đây.
      * @return array<string,array<int,string>>  ma_order => [ma_mon,...]
      */
-    private function baskets(?string $maChiNhanh, int $days = 120): array
+    private function baskets(?string $maChiNhanh, int $days = 120, ?int $maxOrders = null): array
     {
         $from = now()->subDays($days)->toDateString();
+
+        // Nếu giới hạn theo SỐ ĐƠN gần nhất: lấy danh sách ma_order mới nhất trước.
+        $orderIds = null;
+        if ($maxOrders !== null && $maxOrders > 0) {
+            $orderIds = DB::table('ORDERS')
+                ->when($maChiNhanh, fn($q) => $q->where('ma_chi_nhanh', $maChiNhanh))
+                ->whereNotIn('trang_thai', ['da_huy', 'dang_chon'])
+                ->where('ngay_order', '>=', $from)
+                ->orderByDesc('ngay_order')->orderByDesc('gio_order')
+                ->limit($maxOrders)
+                ->pluck('ma_order');
+        }
 
         $rows = DB::table('CHI_TIET_ORDER as ct')
             ->join('ORDERS as o', 'o.ma_order', '=', 'ct.ma_order')
             ->when($maChiNhanh, fn($q) => $q->where('o.ma_chi_nhanh', $maChiNhanh))
             ->whereNotIn('o.trang_thai', ['da_huy', 'dang_chon'])
             ->where('o.ngay_order', '>=', $from)
+            ->when($orderIds !== null, fn($q) => $q->whereIn('ct.ma_order', $orderIds))
             ->select('ct.ma_order', 'ct.ma_mon')
             ->get();
 
@@ -147,9 +160,9 @@ class AnalyticsService
      *   itemCount: array<string,int>, total: int
      * }
      */
-    public function associationRules(?string $maChiNhanh, int $minSupport = 2): array
+    public function associationRules(?string $maChiNhanh, int $minSupport = 2, int $days = 120, ?int $maxOrders = null): array
     {
-        $baskets = $this->baskets($maChiNhanh);
+        $baskets = $this->baskets($maChiNhanh, $days, $maxOrders);
         $total = count($baskets);
 
         $itemCount = [];   // số đơn chứa món A

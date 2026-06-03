@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\StaffCredentialsMail;
 use App\Models\EmailLog;
 use App\Services\EmailVerificationService;
+use App\Support\Pii;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -56,8 +57,16 @@ class NhanVienController extends Controller
             $q->where('NHAN_VIEN.ma_chi_nhanh', session('ma_chi_nhanh'));
         }
 
+        $accounts = $q->get();
+        // Giải mã PII để hiển thị (cột đã mã hóa).
+        $accounts->transform(function ($a) {
+            $a->email = Pii::tryDecrypt($a->email);
+            $a->sdt   = Pii::tryDecrypt($a->sdt);
+            return $a;
+        });
+
         return view('staff.nhanvien-list', [
-            'accounts'     => $q->get(),
+            'accounts'     => $accounts,
             'branches'     => DB::table('CHI_NHANH')->orderBy('ma_chi_nhanh')->get(),
             'roles'        => $this->allowedRoles(),
             'roleLabels'   => self::ROLES,
@@ -73,14 +82,15 @@ class NhanVienController extends Controller
         // Validation chặt + WHITELIST ký tự (chống SQLi/XSS ngay từ cửa ngõ).
         $data = $request->validate([
             'ten_nv'       => ['required', 'string', 'max:100', 'regex:/^[\p{L}\p{N}\s.\-_]+$/u'],
-            'sdt'          => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]*$/'],
+            'sdt'          => ['required', 'string', 'regex:/^0[0-9]{9}$/'],
             'email'        => ['required', 'email:rfc', 'max:150', 'regex:/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/'],
             'chuc_vu'      => ['required', Rule::in($allowed)],
             'ma_chi_nhanh' => 'required|exists:CHI_NHANH,ma_chi_nhanh',
         ], [
             'ten_nv.regex' => 'Họ tên chứa ký tự không hợp lệ.',
             'email.regex'  => 'Email chứa ký tự không hợp lệ.',
-            'sdt.regex'    => 'Số điện thoại chỉ gồm số và + - ( ).',
+            'sdt.required' => 'Vui lòng nhập số điện thoại.',
+            'sdt.regex'    => 'Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng 0.',
         ], [
             'ten_nv'  => 'họ tên',
             'email'   => 'email',
@@ -107,8 +117,9 @@ class NhanVienController extends Controller
             DB::table('NHAN_VIEN')->insert([
                 'ma_nv'        => $maNv,
                 'ten_nv'       => $data['ten_nv'],
-                'sdt'          => $data['sdt'] ?? null,
-                'email'        => $data['email'],
+                // PII mã hóa thủ công vì insert qua Query Builder (không qua Eloquent cast).
+                'sdt'          => Pii::encIfPlain($data['sdt'] ?? null),
+                'email'        => Pii::encIfPlain($data['email']),
                 'ma_chi_nhanh' => $branch,
             ]);
             DB::table('TAI_KHOAN')->insert([
@@ -231,6 +242,8 @@ class NhanVienController extends Controller
             ->select('TAI_KHOAN.*', 'NHAN_VIEN.ma_chi_nhanh', 'NHAN_VIEN.ma_nv as nv', 'NHAN_VIEN.ten_nv', 'NHAN_VIEN.email')
             ->first();
         abort_unless($acc, 404);
+        // Giải mã email để gửi mail (credentials/kích hoạt).
+        $acc->email = Pii::tryDecrypt($acc->email);
         return $acc;
     }
 

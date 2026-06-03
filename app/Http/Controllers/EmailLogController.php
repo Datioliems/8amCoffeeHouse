@@ -26,4 +26,18 @@ class EmailLogController extends Controller
 
         return view('staff.email-log', compact('logs', 'loai', 'thanhCong', 'thatBai'));
     }
+
+    /** Xóa thủ công một dòng nhật ký email. */
+    public function destroy(string $id)
+    {
+        EmailLog::whereKey($id)->delete();
+        return back()->with('success', 'Đã xóa dòng nhật ký email.');
+    }
+
+    /** Xóa thủ công toàn bộ email gửi THẤT BẠI (email không tồn tại/không nhận được). */
+    public function clearFailed()
+    {
+        $n = EmailLog::where('trang_thai', 'that_bai')->delete();
+        return back()->with('success', "Đã xóa {$n} dòng email thất bại.");
+    }
 }

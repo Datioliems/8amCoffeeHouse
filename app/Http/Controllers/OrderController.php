@@ -74,6 +74,7 @@ class OrderController extends Controller
 
         $validated = $request->validate([
             'ten_kh'     => 'nullable|string|max:100',
+            'sdt_kh'     => ['nullable', 'string', 'regex:/^0[0-9]{9}$/'],
             'hinh_thuc'  => 'required|in:tai_ban,mang_ve',
             'items' => 'required|array',
             'items.*.ma_mon' => 'nullable|exists:MON,ma_mon',
@@ -83,6 +84,8 @@ class OrderController extends Controller
             'items.*.options.*.type'  => 'nullable|string|max:30',
             'items.*.options.*.value' => 'nullable|string|max:100',
             'items.*.options.*.price' => 'nullable|integer|min:0',
+        ], [
+            'sdt_kh.regex' => 'Số điện thoại phải gồm đúng 10 chữ số, bắt đầu bằng 0.',
         ]);
 
         $items = collect($validated['items'])
@@ -99,6 +102,7 @@ class OrderController extends Controller
             items:      $items,
             hinhThuc:   $validated['hinh_thuc'],
             tenKh:      $validated['ten_kh'] ?? null,
+            sdtKh:      $validated['sdt_kh'] ?? null,
         );
 
         return redirect()->route('orders.show', $maOrder)

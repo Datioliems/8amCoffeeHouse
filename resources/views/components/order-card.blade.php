@@ -26,12 +26,14 @@
     </div>
 
     <div class="relative z-10 space-y-1 text-sm text-[#522C25]/70">
-        @foreach($order->chiTietOrders->take(3) as $item)
+        @forelse($order->chiTietOrders->take(3) as $item)
         <p class="flex justify-between gap-3">
             <span class="line-clamp-1">{{ $item->mon->ten_mon ?? '—' }}</span>
             <span class="whitespace-nowrap"><span class="font-semibold">x{{ $item->so_luong }}</span> · {{ number_format($item->don_gia_tai_thoi_diem, 0, ',', '.') }}đ</span>
         </p>
-        @endforeach
+        @empty
+        <p class="italic text-[#522C25]/40">Chưa chọn món nào</p>
+        @endforelse
         @if($order->chiTietOrders->count() > 3)
         <p class="text-[#522C25]/45">+ {{ $order->chiTietOrders->count() - 3 }} món khác</p>
         @endif

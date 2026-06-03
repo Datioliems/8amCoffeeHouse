@@ -42,4 +42,7 @@ return [
 
     // Tài khoản tạo nhưng CHƯA kích hoạt quá số ngày này sẽ bị cronjob xoá.
     'purge_unconfirmed_days' => (int) env('PURGE_UNCONFIRMED_DAYS', 7),
+
+    // Gửi email CẢNH BÁO trước khi xoá bao nhiêu ngày (thông báo trước).
+    'purge_warn_days' => (int) env('PURGE_WARN_DAYS', 2),
 ];

@@ -94,7 +94,11 @@ Route::middleware(['auth.staff'])->group(function () {
     // ── NHẬT KÝ ĐĂNG NHẬP / AN TOÀN (chỉ superadmin) ─────────
     Route::middleware('role:superadmin')->get('/nhat-ky-dang-nhap', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('auditlog.index');
     // ── NHẬT KÝ EMAIL (chỉ superadmin) ───────────────────────
-    Route::middleware('role:superadmin')->get('/nhat-ky-email', [\App\Http\Controllers\EmailLogController::class, 'index'])->name('emaillog.index');
+    Route::middleware('role:superadmin')->group(function () {
+        Route::get('/nhat-ky-email',            [\App\Http\Controllers\EmailLogController::class, 'index']      )->name('emaillog.index');
+        Route::delete('/nhat-ky-email/that-bai',[\App\Http\Controllers\EmailLogController::class, 'clearFailed'])->name('emaillog.clearFailed');
+        Route::delete('/nhat-ky-email/{id}',    [\App\Http\Controllers\EmailLogController::class, 'destroy']    )->name('emaillog.destroy');
+    });
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/',                      [OrderController::class, 'index']       )->name('index');

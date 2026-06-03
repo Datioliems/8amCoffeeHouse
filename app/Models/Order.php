@@ -20,6 +20,9 @@ class Order extends Model
         'thoi_gian_xac_nhan'  => 'datetime',
         'thoi_gian_phuc_vu'   => 'datetime',
         'thoi_gian_thanh_toan'=> 'datetime',
+        // PII khách tạm trên đơn → mã hóa
+        'ten_khach'           => 'encrypted',
+        'sdt_khach'           => 'encrypted',
     ];
 
     /** Tên khách để hiển thị: ưu tiên khách đã lưu (có giao dịch), fallback tên tạm trên đơn. */

@@ -14,5 +14,12 @@ class NhaCungCap extends Model
 
     protected $fillable = ['ma_ncc','ten_ncc','dia_chi','sdt','email'];
 
+    // PII/thông tin liên hệ NCC mã hóa khi lưu, tự giải mã khi đọc.
+    protected $casts = [
+        'dia_chi' => 'encrypted',
+        'sdt'     => 'encrypted',
+        'email'   => 'encrypted',
+    ];
+
     public function phieuNhapKhos() { return $this->hasMany(PhieuNhapKho::class, 'ma_ncc', 'ma_ncc'); }
 }

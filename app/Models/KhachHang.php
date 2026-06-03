@@ -12,5 +12,19 @@ class KhachHang extends Model
     protected $keyType    = 'string';
     public $timestamps    = false;
 
-    protected $fillable = ['ma_kh','ten_kh','sdt','ngay_tao'];
+    protected $fillable = ['ma_kh','ten_kh','sdt','sdt_hash','ngay_tao'];
+
+    // PII mã hóa khi lưu, tự giải mã khi đọc.
+    protected $casts = [
+        'ten_kh' => 'encrypted',
+        'sdt'    => 'encrypted',
+    ];
+
+    /** Tự sinh blind index sdt_hash mỗi khi lưu (để tra cứu theo SĐT). */
+    protected static function booted(): void
+    {
+        static::saving(function (self $m) {
+            $m->sdt_hash = \App\Support\Pii::phoneHash($m->sdt);
+        });
+    }
 }

@@ -54,10 +54,18 @@
         @csrf
 
         <section class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10">
-            <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <div class="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-[#522C25]/60">Tên khách (không bắt buộc)</label>
                     <input name="ten_kh" value="{{ old('ten_kh') }}" placeholder="Khách tại bàn {{ $ban->so_ban }}"
+                           class="w-full rounded-xl border border-[#522C25]/15 px-4 py-2.5 text-sm focus:border-[#8B5A2B] focus:ring-[#8B5A2B]">
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-[#522C25]/60">Số điện thoại (không bắt buộc)</label>
+                    <input name="sdt_kh" value="{{ old('sdt_kh') }}" inputmode="numeric" maxlength="10" pattern="0[0-9]{9}"
+                           title="10 chữ số, bắt đầu bằng 0"
+                           oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
+                           placeholder="0901234567"
                            class="w-full rounded-xl border border-[#522C25]/15 px-4 py-2.5 text-sm focus:border-[#8B5A2B] focus:ring-[#8B5A2B]">
                 </div>
                 <button class="rounded-xl bg-[#1A1A1A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#522C25]">
@@ -83,17 +91,27 @@
             </div>
         </section>
 
-        <section class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10">
+        @php $gi = 0; $monsByCat = $mons->groupBy(fn($m) => $m->danhMuc->ten_danh_muc ?? 'Khác'); $cats = $monsByCat->keys()->values(); @endphp
+        <section class="rounded-2xl bg-white p-5 ring-1 ring-[#522C25]/10" x-data="{ cat: 0 }">
             <div class="mb-4 border-b border-[#522C25]/10 pb-4">
                 <h2 class="text-lg font-semibold text-[#1A1A1A]">Chọn món</h2>
-                <p class="mt-1 text-sm text-[#522C25]/55">Bấm + / − để chọn số lượng; “+ Topping” ở góc thẻ để thêm topping.</p>
+                <p class="mt-1 text-sm text-[#522C25]/55">Chọn danh mục, rồi bấm + / − để thêm số lượng; “+ Topping” ở góc thẻ.</p>
             </div>
 
-            @php $gi = 0; $monsByCat = $mons->groupBy(fn($m) => $m->danhMuc->ten_danh_muc ?? 'Khác'); @endphp
+            {{-- Tab danh mục: ấn vào hiện món của danh mục đó --}}
+            <div class="mb-4 flex flex-wrap gap-2">
+                @foreach($cats as $i => $catName)
+                <button type="button" @click="cat = {{ $i }}"
+                        class="rounded-full px-4 py-2 text-sm font-semibold transition"
+                        :class="cat === {{ $i }} ? 'bg-[#1A1A1A] text-white' : 'bg-[#F2F2F2] text-[#522C25] hover:bg-[#E9DDD0]'">
+                    {{ $catName }} <span class="opacity-60">({{ $monsByCat[$catName]->count() }})</span>
+                </button>
+                @endforeach
+            </div>
 
-            @foreach($monsByCat as $cat => $catMons)
-            <div class="mb-6">
-                <h3 class="mb-3 text-sm font-bold text-[#522C25]/70">{{ $cat }} <span class="text-[#522C25]/40">({{ $catMons->count() }})</span></h3>
+            @foreach($cats as $i => $cat)
+            @php $catMons = $monsByCat[$cat]; @endphp
+            <div x-show="cat === {{ $i }}" x-cloak>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                     @foreach($catMons as $mon)
                     @php $index = $gi++; @endphp

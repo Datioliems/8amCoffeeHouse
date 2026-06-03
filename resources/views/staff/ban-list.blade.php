@@ -58,83 +58,24 @@
     </form>
     @endif
 
-    <section class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_360px]">
-        @php $floorNames = $bansByFloor->keys()->values(); @endphp
-        <div class="rounded-[25px] border border-[#e6bdb8]/40 bg-[#fcf9f8] p-6 shadow-sm"
-             x-data="{ fi: 0, total: {{ $floorNames->count() }} }">
-
-            {{-- Header + chuyển tầng (◀ trước / sau ▶) cho chi nhánh nhiều tầng --}}
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <span class="rounded-full border border-[#E82C2A]/20 bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#E82C2A]">
-                    Sơ đồ bàn
-                </span>
-                @if($floorNames->count() > 1)
-                <div class="flex items-center gap-2">
-                    <button type="button" @click="fi = (fi - 1 + total) % total"
-                            class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg font-bold text-[#522C25] ring-1 ring-[#522C25]/15 transition hover:bg-[#F2F2F2]">‹</button>
-                    <span class="min-w-[88px] text-center text-sm font-bold text-[#522C25]"
-                          x-text="['{{ $floorNames->implode("','") }}'][fi]"></span>
-                    <button type="button" @click="fi = (fi + 1) % total"
-                            class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg font-bold text-[#522C25] ring-1 ring-[#522C25]/15 transition hover:bg-[#F2F2F2]">›</button>
-                </div>
-                @endif
-            </div>
-
-            {{-- Sơ đồ bàn nhìn trực diện — mỗi tầng 1 lưới thẻ bàn --}}
-            <div class="rounded-[20px] bg-white p-5 ring-1 ring-[#522C25]/10">
-                @foreach($floorNames as $idx => $floor)
-                @php $floorBans = $bansByFloor[$floor]; @endphp
-                <div x-show="fi === {{ $idx }}" x-cloak>
-                    <p class="mb-3 text-sm font-bold text-[#522C25]/70">{{ $floor }} · {{ $floorBans->count() }} bàn</p>
-                    <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-                        @foreach($floorBans as $ban)
-                        @php
-                            $occupied = $ban->trang_thai === 'co_khach' || (($orderCounts[$ban->ma_ban] ?? 0) > 0);
-                            $meta = $occupied ? $statusMeta['co_khach'] : ($statusMeta[$ban->trang_thai] ?? $statusMeta['trong']);
-                        @endphp
-                        <a href="#table-{{ $ban->ma_ban }}"
-                           class="flex flex-col items-center justify-center rounded-2xl border border-white/70 px-2 py-4 text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                           style="background: {{ $meta['iso'] }};"
-                           title="Bàn {{ $ban->so_ban }} · {{ $ban->so_ghe ?? 4 }} ghế · {{ $meta['label'] }}">
-                            <span class="text-lg font-bold">B{{ $ban->so_ban }}</span>
-                            <span class="mt-0.5 text-[11px] font-medium opacity-95">{{ $ban->so_ghe ?? 4 }} ghế</span>
-                            <span class="mt-1 rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-semibold">{{ $meta['label'] }}</span>
-                        </a>
-                        @endforeach
-                    </div>
-                </div>
-                @endforeach
-                <p class="mt-4 text-xs text-[#522C25]/50">Màu đỏ = có khách/đang order · xanh = trống · nâu = đặt trước. Bấm vào bàn để tới hàng cấu hình bên dưới.</p>
-            </div>
+    {{-- Sơ đồ bàn đã chuyển sang trang Đơn hàng (đặt món tại bàn). Ở đây chỉ giữ
+         tổng quan sức chứa + danh sách cấu hình bàn/QR. --}}
+    <section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-2xl bg-white p-4 ring-1 ring-[#522C25]/10">
+            <p class="text-xs text-[#522C25]/60">Có khách</p>
+            <p class="mt-1 font-mono text-2xl font-bold text-[#E82C2A]">{{ $stats['co_khach'] }}</p>
         </div>
-
-        <div class="space-y-6">
-            <div class="rounded-[25px] bg-[#F2F2F2] p-6">
-                <h3 class="mb-4 text-sm font-bold uppercase tracking-[0.16em] text-[#522C25]/65">Capacity overview</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between rounded-xl bg-white p-4">
-                        <span class="text-sm text-[#522C25]/70">Có khách</span>
-                        <span class="font-mono text-2xl font-bold text-[#E82C2A]">{{ $stats['co_khach'] }}</span>
-                    </div>
-                    <div class="flex items-center justify-between rounded-xl bg-white p-4">
-                        <span class="text-sm text-[#522C25]/70">Trống</span>
-                        <span class="font-mono text-2xl font-bold text-[#52613B]">{{ $stats['trong'] }}</span>
-                    </div>
-                    <div class="flex items-center justify-between rounded-xl bg-white p-4">
-                        <span class="text-sm text-[#522C25]/70">Đặt trước</span>
-                        <span class="font-mono text-2xl font-bold text-[#80534a]">{{ $stats['dat_truoc'] }}</span>
-                    </div>
-                    <div class="flex items-center justify-between rounded-xl bg-white p-4">
-                        <span class="text-sm text-[#522C25]/70">Ghế đang dùng</span>
-                        <span class="font-mono text-2xl font-bold text-[#1A1A1A]">{{ $occupiedSeats }}/{{ $totalSeats }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-[25px] bg-[#1A1A1A] p-6 text-white">
-                <p class="text-sm font-bold uppercase tracking-[0.16em] text-[#FFB4AB]">Vận hành</p>
-                <p class="mt-3 text-sm leading-6 text-white/70">Bàn có order đang xử lý sẽ hiển thị số lượng order trong bảng bên dưới. QR mở trực tiếp link gọi món theo từng bàn.</p>
-            </div>
+        <div class="rounded-2xl bg-white p-4 ring-1 ring-[#522C25]/10">
+            <p class="text-xs text-[#522C25]/60">Trống</p>
+            <p class="mt-1 font-mono text-2xl font-bold text-[#52613B]">{{ $stats['trong'] }}</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 ring-1 ring-[#522C25]/10">
+            <p class="text-xs text-[#522C25]/60">Đặt trước</p>
+            <p class="mt-1 font-mono text-2xl font-bold text-[#80534a]">{{ $stats['dat_truoc'] }}</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 ring-1 ring-[#522C25]/10">
+            <p class="text-xs text-[#522C25]/60">Ghế đang dùng</p>
+            <p class="mt-1 font-mono text-2xl font-bold text-[#1A1A1A]">{{ $occupiedSeats }}/{{ $totalSeats }}</p>
         </div>
     </section>
 

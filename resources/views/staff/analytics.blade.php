@@ -51,8 +51,38 @@
         </div>
 
         <div class="rounded-3xl border border-[#522C25]/10 bg-white shadow-sm">
-            <div class="flex items-center justify-between border-b border-[#522C25]/10 px-6 py-4">
-                <p class="text-sm text-[#522C25]/65">Luật kết hợp (market-basket) tính từ {{ $totalDon }} đơn gần đây.</p>
+            <div class="border-b border-[#522C25]/10 px-6 py-4">
+                <p class="mb-3 text-sm text-[#522C25]/65">Luật kết hợp (market-basket) tính từ <strong>{{ $totalDon }}</strong> đơn theo phạm vi đã chọn.</p>
+                <form method="GET" class="flex flex-wrap items-end gap-3" x-data="{ pv: '{{ $filters['pham_vi'] }}' }">
+                    <div>
+                        <label class="mb-1 block text-[11px] font-semibold text-[#522C25]/55">Phạm vi</label>
+                        <select name="pham_vi" x-model="pv" class="rounded-lg border border-[#522C25]/15 px-3 py-2 text-sm">
+                            <option value="ngay">Theo số ngày</option>
+                            <option value="don">Theo số đơn gần nhất</option>
+                        </select>
+                    </div>
+                    <div x-show="pv==='ngay'">
+                        <label class="mb-1 block text-[11px] font-semibold text-[#522C25]/55">Số ngày gần nhất</label>
+                        <input type="number" name="days" min="1" max="365" value="{{ $filters['days'] }}"
+                               class="w-28 rounded-lg border border-[#522C25]/15 px-3 py-2 text-sm">
+                    </div>
+                    <div x-show="pv==='don'" x-cloak>
+                        <label class="mb-1 block text-[11px] font-semibold text-[#522C25]/55">Số đơn gần nhất</label>
+                        <input type="number" name="max_orders" min="5" max="5000" value="{{ $filters['maxOrders'] }}"
+                               class="w-28 rounded-lg border border-[#522C25]/15 px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[11px] font-semibold text-[#522C25]/55">Ngưỡng tối thiểu (số đơn chứa cặp)</label>
+                        <input type="number" name="min_support" min="1" max="50" value="{{ $filters['minSupport'] }}"
+                               class="w-28 rounded-lg border border-[#522C25]/15 px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[11px] font-semibold text-[#522C25]/55">Số luật hiển thị</label>
+                        <input type="number" name="top" min="5" max="100" value="{{ $filters['topN'] }}"
+                               class="w-24 rounded-lg border border-[#522C25]/15 px-3 py-2 text-sm">
+                    </div>
+                    <button class="rounded-lg bg-[#1A1A1A] px-4 py-2 text-sm font-semibold text-white hover:bg-black">Áp dụng</button>
+                </form>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">

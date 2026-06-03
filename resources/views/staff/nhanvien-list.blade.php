@@ -45,12 +45,17 @@
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Email (nhận mật khẩu)</label>
                 <input name="email" type="email" value="{{ old('email') }}" required
+                       pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"
+                       title="Email hợp lệ, vd: nhanvien@email.com"
                        class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm" placeholder="nhanvien@email.com">
             </div>
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Số điện thoại</label>
-                <input name="sdt" value="{{ old('sdt') }}"
-                       class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm" placeholder="090...">
+                <input name="sdt" value="{{ old('sdt') }}" required
+                       inputmode="numeric" maxlength="10" pattern="0[0-9]{9}"
+                       title="Số điện thoại gồm đúng 10 chữ số, bắt đầu bằng 0"
+                       oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
+                       class="w-full rounded-xl border border-[#522C25]/15 px-3 py-2 text-sm" placeholder="0901234567">
             </div>
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#522C25]/60">Vai trò</label>

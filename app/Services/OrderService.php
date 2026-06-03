@@ -555,7 +555,8 @@ class OrderService
 
         $khachHang = null;
         if ($sdtKh) {
-            $khachHang = KhachHang::where('sdt', $sdtKh)->first();
+            // Tra cứu qua blind index (sdt đã mã hóa, không WHERE trực tiếp được).
+            $khachHang = KhachHang::where('sdt_hash', \App\Support\Pii::phoneHash($sdtKh))->first();
         }
         if (!$khachHang) {
             $khachHang = $this->createKhachHang($tenKh, $sdtKh);

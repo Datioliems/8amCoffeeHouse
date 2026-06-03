@@ -30,14 +30,23 @@
                 <h2 class="text-base font-semibold">Lịch sử email hệ thống</h2>
                 <p class="text-xs text-[#522C25]/55">Thông tin tài khoản, link kích hoạt và mã OTP đã gửi.</p>
             </div>
-            <form method="GET">
-                <select name="loai" onchange="this.form.submit()" class="rounded-full border border-[#522C25]/15 bg-white px-4 py-2 text-sm">
-                    <option value="">Tất cả loại</option>
-                    @foreach($nhanLoai as $k => $v)
-                        <option value="{{ $k }}" @selected($loai === $k)>{{ $v[0] }}</option>
-                    @endforeach
-                </select>
-            </form>
+            <div class="flex items-center gap-2">
+                <form method="GET">
+                    <select name="loai" onchange="this.form.submit()" class="rounded-full border border-[#522C25]/15 bg-white px-4 py-2 text-sm">
+                        <option value="">Tất cả loại</option>
+                        @foreach($nhanLoai as $k => $v)
+                            <option value="{{ $k }}" @selected($loai === $k)>{{ $v[0] }}</option>
+                        @endforeach
+                    </select>
+                </form>
+                <form method="POST" action="{{ route('emaillog.clearFailed') }}"
+                      onsubmit="return confirm('Xóa toàn bộ dòng email gửi thất bại?');">
+                    @csrf @method('DELETE')
+                    <button class="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-[#BB0011] ring-1 ring-red-100 hover:bg-red-100">
+                        Xóa email thất bại
+                    </button>
+                </form>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -48,6 +57,7 @@
                         <th class="px-4 py-3">Người nhận</th>
                         <th class="px-4 py-3">Tiêu đề</th>
                         <th class="px-4 py-3">Kết quả</th>
+                        <th class="px-4 py-3 text-right">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#522C25]/8">
@@ -65,9 +75,15 @@
                                 <span class="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#BB0011]" title="{{ $log->loi }}">✕ Thất bại</span>
                             @endif
                         </td>
+                        <td class="px-4 py-3 text-right">
+                            <form method="POST" action="{{ route('emaillog.destroy', $log->id) }}" onsubmit="return confirm('Xóa dòng này?');">
+                                @csrf @method('DELETE')
+                                <button class="text-xs font-semibold text-[#BB0011] hover:underline">Xóa</button>
+                            </form>
+                        </td>
                     </tr>
                     @empty
-                    <tr><td colspan="5" class="px-4 py-16 text-center text-[#522C25]/55">Chưa có email nào được ghi nhận.</td></tr>
+                    <tr><td colspan="6" class="px-4 py-16 text-center text-[#522C25]/55">Chưa có email nào được ghi nhận.</td></tr>
                     @endforelse
                 </tbody>
             </table>
