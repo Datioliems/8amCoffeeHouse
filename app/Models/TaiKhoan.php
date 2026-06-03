@@ -12,9 +12,27 @@ class TaiKhoan extends Model
     protected $keyType    = 'string';
     public $timestamps    = false;
 
-    protected $fillable = ['ma_tai_khoan','ten_tk','mat_khau','chuc_vu','trang_thai','ma_nv'];
+    protected $fillable = [
+        'ma_tai_khoan','ten_tk','mat_khau','chuc_vu','trang_thai','ma_nv',
+        'dang_nhap_sai','khoa_den','xac_thuc_2_lop',
+        'otp_ma','otp_het_han','otp_sai',
+        'lan_dang_nhap_cuoi','ip_dang_nhap_cuoi',
+    ];
 
-    protected $hidden = ['mat_khau'];
+    protected $hidden = ['mat_khau','otp_ma'];
+
+    protected $casts = [
+        'khoa_den'           => 'datetime',
+        'otp_het_han'        => 'datetime',
+        'lan_dang_nhap_cuoi' => 'datetime',
+        'xac_thuc_2_lop'     => 'boolean',
+    ];
 
     public function nhanVien() { return $this->belongsTo(NhanVien::class, 'ma_nv', 'ma_nv'); }
+
+    /** Tài khoản có đang bị khoá tạm thời do đăng nhập sai nhiều lần không? */
+    public function dangBiKhoa(): bool
+    {
+        return $this->khoa_den !== null && $this->khoa_den->isFuture();
+    }
 }
