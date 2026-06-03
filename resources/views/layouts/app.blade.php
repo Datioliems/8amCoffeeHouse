@@ -110,6 +110,12 @@
             </span>
             Nhật ký đăng nhập
         </a>
+        <a href="{{ route('emaillog.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('emaillog.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('emaillog.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            </span>
+            Nhật ký Email
+        </a>
         @endif
         @endif
     </nav>
@@ -161,6 +167,7 @@
         @endif
         @if(session('chuc_vu') === 'superadmin')
             <a href="{{ route('auditlog.index') }}" class="block rounded-xl px-3 py-2 text-sm">Nhật ký đăng nhập</a>
+            <a href="{{ route('emaillog.index') }}" class="block rounded-xl px-3 py-2 text-sm">Nhật ký Email</a>
         @endif
     </div>
 

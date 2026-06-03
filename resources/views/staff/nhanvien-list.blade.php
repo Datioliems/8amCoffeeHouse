@@ -124,8 +124,8 @@
                                 <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $roleBadge[$a->chuc_vu] ?? 'bg-gray-100' }}">{{ $roleLabels[$a->chuc_vu] ?? $a->chuc_vu }}</span>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $a->trang_thai==='active' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600' }}">
-                                    {{ $a->trang_thai==='active' ? 'Đang dùng' : 'Đã khoá' }}
+                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $a->trang_thai==='active' ? 'bg-green-100 text-green-700' : ($a->trang_thai==='cho_xac_minh' ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-600') }}">
+                                    {{ $a->trang_thai==='active' ? 'Đang dùng' : ($a->trang_thai==='cho_xac_minh' ? 'Chờ kích hoạt' : 'Đã khoá') }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right text-xs text-[#522C25]/40">
@@ -143,9 +143,12 @@
                                     </select>
                                 </td>
                                 <td class="px-4 py-3">
+                                    @if($a->trang_thai==='cho_xac_minh')
+                                        <span class="mb-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Chờ kích hoạt</span>
+                                    @endif
                                     <select name="trang_thai" class="rounded-lg border border-[#522C25]/15 px-2 py-1.5 text-xs">
                                         <option value="active"   @selected($a->trang_thai==='active')>Đang dùng</option>
-                                        <option value="inactive" @selected($a->trang_thai!=='active')>Khoá</option>
+                                        <option value="inactive" @selected($a->trang_thai==='inactive')>Khoá</option>
                                     </select>
                                 </td>
                                 <td class="px-4 py-3">
@@ -168,12 +171,20 @@
                     </tr>
                     @if(! $locked)
                     <tr>
-                        <td colspan="6" class="px-4 pb-3 text-right">
-                            <form method="POST" action="{{ route('nhanvien.destroy', $a->ma_tai_khoan) }}"
-                                  onsubmit="return confirm('Xóa tài khoản {{ $a->ten_tk }}?');">
-                                @csrf @method('DELETE')
-                                <button class="text-xs font-semibold text-[#BB0011] hover:underline">Xóa tài khoản</button>
-                            </form>
+                        <td colspan="6" class="px-4 pb-3">
+                            <div class="flex items-center justify-end gap-4">
+                                @if($a->trang_thai==='cho_xac_minh')
+                                <form method="POST" action="{{ route('nhanvien.resend', $a->ma_tai_khoan) }}">
+                                    @csrf
+                                    <button class="text-xs font-semibold text-[#8B5A2B] hover:underline">↻ Gửi lại email kích hoạt</button>
+                                </form>
+                                @endif
+                                <form method="POST" action="{{ route('nhanvien.destroy', $a->ma_tai_khoan) }}"
+                                      onsubmit="return confirm('Xóa tài khoản {{ $a->ten_tk }}?');">
+                                    @csrf @method('DELETE')
+                                    <button class="text-xs font-semibold text-[#BB0011] hover:underline">Xóa tài khoản</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @endif

@@ -14,6 +14,8 @@ class StaffCredentialsMail extends Mailable
         public string $tenNv,
         public string $tenTk,
         public string $matKhau,
+        public ?string $activationUrl = null,   // link kích hoạt (nếu cần xác thực email)
+        public int $activationHours = 72,
     ) {}
 
     public function build()

@@ -97,3 +97,42 @@ gửi/xác thực OTP, đăng xuất — kèm IP, user-agent, thời gian.
 
 **Demo 2FA:** đặt `TWO_FACTOR_ENABLED=true` + cấu hình `MAIL_*` → đăng nhập →
 nhận OTP qua email → nhập tại `/otp`. Xem nhật ký tại `/nhat-ky-dang-nhap`.
+
+---
+
+## 5) Xác thực email khi tạo tài khoản nhân viên + EMAIL_LOG
+
+**Kiểm tra email tồn tại (validate-before-send)** — `EmailVerificationService`:
+- Định dạng (whitelist ký tự, chống chèn mã).
+- Bản ghi **MX** của tên miền (`checkdnsrr`, fallback A/AAAA) → domain không nhận thư thì từ chối tạo ngay.
+
+**Kích hoạt qua email (xác nhận mailbox tồn tại & thuộc sở hữu):**
+- Tạo tài khoản → trạng thái **`cho_xac_minh`** + token kích hoạt (hết hạn `ACCOUNT_ACTIVATION_HOURS`, mặc định 72h).
+- Email gửi kèm **link kích hoạt** (`/kich-hoat/{token}`). Bấm link → `active`, mới đăng nhập được.
+- Đăng nhập khi chưa kích hoạt → báo rõ "Tài khoản chưa kích hoạt".
+- Nút **"Gửi lại email kích hoạt"** ở trang Nhân viên (sinh token + mật khẩu tạm mới).
+
+**EMAIL_LOG** (bảng `EMAIL_LOG`, trang `/nhat-ky-email` cho superadmin): ghi mọi email
+(credentials / kích hoạt / OTP) — loại, người nhận, tiêu đề, thành/bại, lỗi.
+
+**Cronjob dọn tài khoản chưa kích hoạt:** lệnh `php artisan accounts:purge-unconfirmed`
+(xoá `TAI_KHOAN` + `NHAN_VIEN` ở trạng thái `cho_xac_minh` quá `PURGE_UNCONFIRMED_DAYS`
+ngày, mặc định 7) — đã lên lịch chạy hằng ngày 03:00 trong `routes/console.php`.
+> Trên server cần bật scheduler: thêm cron `* * * * * php artisan schedule:run` (hoặc chạy thủ công lệnh trên).
+
+## 6) Chống SQL Injection (và XSS, theo OWASP)
+
+- **Parameterized queries**: toàn bộ truy vấn dùng Eloquent / Query Builder (bind `?`),
+  `whereRaw(... = ?, [$value])`. Không nối chuỗi input người dùng vào SQL.
+- **Whitelist validation** đầu vào tạo nhân viên: regex cho họ tên / email / SĐT
+  (từ chối `' " ; < > &`…). Định danh bảng/cột trong sinh mã được guard bằng regex.
+- **Output encoding**: Blade `{{ }}` tự động escape HTML → chống XSS khi hiển thị
+  email/tên trong trang quản trị.
+- **Least privilege** (khuyến nghị triển khai): tài khoản DB của ứng dụng chỉ cấp
+  `SELECT/INSERT/UPDATE/DELETE` trên schema cần thiết, không cấp `DROP`.
+
+**Cấu hình thêm (`.env`):**
+```
+ACCOUNT_ACTIVATION_HOURS=72
+PURGE_UNCONFIRMED_DAYS=7
+```

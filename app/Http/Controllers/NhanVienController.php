@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Mail\StaffCredentialsMail;
+use App\Models\EmailLog;
+use App\Services\EmailVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -64,31 +66,44 @@ class NhanVienController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, EmailVerificationService $emailVerifier)
     {
         $allowed = array_keys($this->allowedRoles());
 
+        // Validation chặt + WHITELIST ký tự (chống SQLi/XSS ngay từ cửa ngõ).
         $data = $request->validate([
-            'ten_nv'       => 'required|string|max:100',
-            'sdt'          => 'nullable|string|max:15',
-            'email'        => 'required|email|max:150',
+            'ten_nv'       => ['required', 'string', 'max:100', 'regex:/^[\p{L}\p{N}\s.\-_]+$/u'],
+            'sdt'          => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]*$/'],
+            'email'        => ['required', 'email:rfc', 'max:150', 'regex:/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/'],
             'chuc_vu'      => ['required', Rule::in($allowed)],
             'ma_chi_nhanh' => 'required|exists:CHI_NHANH,ma_chi_nhanh',
-        ], [], [
+        ], [
+            'ten_nv.regex' => 'Họ tên chứa ký tự không hợp lệ.',
+            'email.regex'  => 'Email chứa ký tự không hợp lệ.',
+            'sdt.regex'    => 'Số điện thoại chỉ gồm số và + - ( ).',
+        ], [
             'ten_nv'  => 'họ tên',
             'email'   => 'email',
             'chuc_vu' => 'vai trò',
         ]);
 
+        // Kiểm tra email có thật (định dạng + bản ghi MX) TRƯỚC khi tạo & gửi.
+        $check = $emailVerifier->check($data['email']);
+        if (! $check['ok']) {
+            return back()->withInput()->withErrors(['email' => $check['reason']]);
+        }
+
         // Quản lý chi nhánh bị khoá cứng vào chi nhánh của mình
         $branch = $this->isSuperAdmin() ? $data['ma_chi_nhanh'] : session('ma_chi_nhanh');
 
-        $maNv   = $this->nextId('NHAN_VIEN', 'ma_nv', 'NV');
-        $maTk   = $this->nextId('TAI_KHOAN', 'ma_tai_khoan', 'TK');
-        $tenTk  = $this->nextStaffUsername();            // staff0001, staff0002…
-        $matKhau = $this->randomPassword();              // mật khẩu tạm, gửi qua email
+        $maNv    = $this->nextId('NHAN_VIEN', 'ma_nv', 'NV');
+        $maTk    = $this->nextId('TAI_KHOAN', 'ma_tai_khoan', 'TK');
+        $tenTk   = $this->nextStaffUsername();            // staff0001, staff0002…
+        $matKhau = $this->randomPassword();               // mật khẩu tạm, gửi qua email
+        $token   = Str::random(48);
+        $hetHan  = now()->addHours(config('security.activation_hours'));
 
-        DB::transaction(function () use ($data, $branch, $maNv, $maTk, $tenTk, $matKhau) {
+        DB::transaction(function () use ($data, $branch, $maNv, $maTk, $tenTk, $matKhau, $token, $hetHan) {
             DB::table('NHAN_VIEN')->insert([
                 'ma_nv'        => $maNv,
                 'ten_nv'       => $data['ten_nv'],
@@ -97,21 +112,52 @@ class NhanVienController extends Controller
                 'ma_chi_nhanh' => $branch,
             ]);
             DB::table('TAI_KHOAN')->insert([
-                'ma_tai_khoan' => $maTk,
-                'ten_tk'       => $tenTk,
-                'mat_khau'     => Hash::make($matKhau),
-                'chuc_vu'      => $data['chuc_vu'],
-                'trang_thai'   => 'active',
-                'ma_nv'        => $maNv,
+                'ma_tai_khoan'      => $maTk,
+                'ten_tk'            => $tenTk,
+                'mat_khau'          => Hash::make($matKhau),
+                'chuc_vu'           => $data['chuc_vu'],
+                // Chưa kích hoạt cho tới khi bấm link trong email.
+                'trang_thai'        => 'cho_xac_minh',
+                'ma_nv'             => $maNv,
+                'xac_thuc_2_lop'    => 1,
+                'kich_hoat_token'   => $token,
+                'kich_hoat_het_han' => $hetHan,
+                'tao_luc'           => now(),
             ]);
         });
 
-        $sent = $this->sendCredentials($data['email'], $data['ten_nv'], $tenTk, $matKhau);
+        $sent = $this->sendCredentials($data['email'], $data['ten_nv'], $tenTk, $matKhau, $maTk, $token);
 
-        $msg = "Đã tạo tài khoản “{$tenTk}” (mã {$maTk}). "
-             . ($sent ? "Mật khẩu đã gửi tới {$data['email']}." : "Chưa gửi được email — mật khẩu tạm: {$matKhau}");
+        $msg = "Đã tạo tài khoản “{$tenTk}” (mã {$maTk}) ở trạng thái CHỜ KÍCH HOẠT. "
+             . ($sent
+                ? "Email kèm link kích hoạt đã gửi tới {$data['email']}."
+                : "Chưa gửi được email — mật khẩu tạm: {$matKhau}. Hãy bấm “Gửi lại kích hoạt”.");
 
         return back()->with('success', $msg);
+    }
+
+    /** Gửi lại email kích hoạt (sinh token mới). */
+    public function resend(string $maTaiKhoan)
+    {
+        $acc = $this->findAccount($maTaiKhoan);
+        $this->authorizeManage($acc);
+
+        if ($acc->trang_thai === 'active') {
+            return back()->with('error', 'Tài khoản đã kích hoạt, không cần gửi lại.');
+        }
+
+        $token  = Str::random(48);
+        $matKhau = $this->randomPassword();   // cấp lại mật khẩu tạm mới cho an toàn
+        DB::table('TAI_KHOAN')->where('ma_tai_khoan', $maTaiKhoan)->update([
+            'mat_khau'          => Hash::make($matKhau),
+            'kich_hoat_token'   => $token,
+            'kich_hoat_het_han' => now()->addHours(config('security.activation_hours')),
+        ]);
+
+        $sent = $this->sendCredentials($acc->email, $acc->ten_nv, $acc->ten_tk, $matKhau, $maTaiKhoan, $token);
+
+        return back()->with($sent ? 'success' : 'error',
+            $sent ? "Đã gửi lại email kích hoạt tới {$acc->email}." : "Vẫn chưa gửi được email tới {$acc->email}.");
     }
 
     public function update(Request $request, string $maTaiKhoan)
@@ -202,17 +248,24 @@ class NhanVienController extends Controller
         }
     }
 
-    /** Gửi email thông tin đăng nhập; trả về true nếu gửi thành công. */
-    private function sendCredentials(?string $email, string $tenNv, string $tenTk, string $matKhau): bool
+    /** Gửi email thông tin đăng nhập (kèm link kích hoạt); ghi EMAIL_LOG; trả về true nếu gửi thành công. */
+    private function sendCredentials(?string $email, string $tenNv, string $tenTk, string $matKhau, ?string $maTk = null, ?string $token = null): bool
     {
         if (! $email) {
+            EmailLog::ghi('tai_khoan', (string) $email, false, 'Tài khoản 8AM Coffee', $maTk, 'Không có email.');
             return false;
         }
+
+        $activationUrl = $token ? route('account.activate', $token) : null;
+        $hours = (int) config('security.activation_hours');
+
         try {
-            Mail::to($email)->send(new StaffCredentialsMail($tenNv, $tenTk, $matKhau));
+            Mail::to($email)->send(new StaffCredentialsMail($tenNv, $tenTk, $matKhau, $activationUrl, $hours));
+            EmailLog::ghi('tai_khoan', $email, true, 'Tài khoản 8AM Coffee', $maTk);
             return true;
         } catch (\Throwable $e) {
             Log::warning('Không gửi được email tài khoản nhân viên: ' . $e->getMessage());
+            EmailLog::ghi('tai_khoan', $email, false, 'Tài khoản 8AM Coffee', $maTk, $e->getMessage());
             return false;
         }
     }
@@ -236,6 +289,12 @@ class NhanVienController extends Controller
     /** Sinh mã kế tiếp dạng PREFIX + số đệm 3 chữ số (NV001, TK012…). */
     private function nextId(string $table, string $col, string $prefix): string
     {
+        // Guard whitelist tên bảng/cột (chống chèn SQL qua định danh — phòng thủ chiều sâu,
+        // dù các tham số này luôn là hằng nội bộ, không phải input người dùng).
+        if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $table) || ! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $col)) {
+            throw new \InvalidArgumentException('Tên bảng/cột không hợp lệ.');
+        }
+
         $len = strlen($prefix) + 1;
         $max = DB::table($table)
             ->where($col, 'like', $prefix.'%')

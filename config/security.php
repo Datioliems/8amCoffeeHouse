@@ -31,4 +31,15 @@ return [
 
     // Số ký tự của OTP.
     'otp_length' => 6,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kích hoạt tài khoản qua email
+    |--------------------------------------------------------------------------
+    */
+    // Link kích hoạt trong email còn hiệu lực bao nhiêu giờ.
+    'activation_hours' => (int) env('ACCOUNT_ACTIVATION_HOURS', 72),
+
+    // Tài khoản tạo nhưng CHƯA kích hoạt quá số ngày này sẽ bị cronjob xoá.
+    'purge_unconfirmed_days' => (int) env('PURGE_UNCONFIRMED_DAYS', 7),
 ];

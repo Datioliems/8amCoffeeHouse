@@ -17,15 +17,19 @@ class TaiKhoan extends Model
         'dang_nhap_sai','khoa_den','xac_thuc_2_lop',
         'otp_ma','otp_het_han','otp_sai',
         'lan_dang_nhap_cuoi','ip_dang_nhap_cuoi',
+        'email_xac_thuc_luc','kich_hoat_token','kich_hoat_het_han','tao_luc',
     ];
 
-    protected $hidden = ['mat_khau','otp_ma'];
+    protected $hidden = ['mat_khau','otp_ma','kich_hoat_token'];
 
     protected $casts = [
         'khoa_den'           => 'datetime',
         'otp_het_han'        => 'datetime',
         'lan_dang_nhap_cuoi' => 'datetime',
         'xac_thuc_2_lop'     => 'boolean',
+        'email_xac_thuc_luc' => 'datetime',
+        'kich_hoat_het_han'  => 'datetime',
+        'tao_luc'            => 'datetime',
     ];
 
     public function nhanVien() { return $this->belongsTo(NhanVien::class, 'ma_nv', 'ma_nv'); }

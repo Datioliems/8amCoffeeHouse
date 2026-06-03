@@ -49,6 +49,9 @@ Route::get( '/otp',        [AuthController::class, 'showOtp']  )->name('otp.show
 Route::post('/otp',        [AuthController::class, 'verifyOtp'])->name('otp.verify');
 Route::post('/otp/resend', [AuthController::class, 'resendOtp'])->name('otp.resend');
 
+// Kích hoạt tài khoản nhân viên (public — bấm từ link trong email)
+Route::get('/kich-hoat/{token}', [\App\Http\Controllers\AccountActivationController::class, 'activate'])->name('account.activate');
+
 // ── VNPAY CALLBACK (public — cổng/khách gọi về, không qua auth.staff) ──
 Route::get('/payment/vnpay/return', [PaymentController::class, 'vnpayReturn'])->name('payment.vnpay.return');
 Route::get('/payment/vnpay/ipn',    [PaymentController::class, 'vnpayIpn']   )->name('payment.vnpay.ipn');
@@ -76,6 +79,7 @@ Route::middleware(['auth.staff'])->group(function () {
         Route::get('/',                 [NhanVienController::class, 'index'] )->name('index');
         Route::post('/',                [NhanVienController::class, 'store'] )->name('store');
         Route::put('/{ma_tai_khoan}',   [NhanVienController::class, 'update'])->name('update');
+        Route::post('/{ma_tai_khoan}/resend', [NhanVienController::class, 'resend'])->name('resend');
         Route::delete('/{ma_tai_khoan}',[NhanVienController::class, 'destroy'])->name('destroy');
     });
 
@@ -89,6 +93,8 @@ Route::middleware(['auth.staff'])->group(function () {
 
     // ── NHẬT KÝ ĐĂNG NHẬP / AN TOÀN (chỉ superadmin) ─────────
     Route::middleware('role:superadmin')->get('/nhat-ky-dang-nhap', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('auditlog.index');
+    // ── NHẬT KÝ EMAIL (chỉ superadmin) ───────────────────────
+    Route::middleware('role:superadmin')->get('/nhat-ky-email', [\App\Http\Controllers\EmailLogController::class, 'index'])->name('emaillog.index');
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/',                      [OrderController::class, 'index']       )->name('index');

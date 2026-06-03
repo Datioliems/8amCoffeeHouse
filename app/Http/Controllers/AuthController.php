@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\OtpMail;
+use App\Models\EmailLog;
 use App\Models\NhatKyDangNhap;
 use App\Models\TaiKhoan;
 use Illuminate\Http\Request;
@@ -45,10 +46,9 @@ class AuthController extends Controller
         }
         RateLimiter::hit($ipKey, 60);
 
-        // ── (2) Tìm tài khoản (active) ──────────────────────────────────
+        // ── (2) Tìm tài khoản theo tên đăng nhập (mọi trạng thái) ───────
         $taiKhoan = TaiKhoan::with('nhanVien')
             ->where('ten_tk', $tenTk)
-            ->where('trang_thai', 'active')
             ->first();
 
         // ── (3) Đang bị khoá tạm thời? ─────────────────────────────────
@@ -96,7 +96,15 @@ class AuthController extends Controller
             return back()->withErrors(['ten_tk' => $msg])->withInput($request->only('ten_tk'));
         }
 
-        // ── (5) Đúng mật khẩu → reset đếm sai ───────────────────────────
+        // ── (5) Đúng mật khẩu → kiểm tra trạng thái tài khoản ───────────
+        if ($taiKhoan->trang_thai !== 'active') {
+            $msg = $taiKhoan->trang_thai === 'cho_xac_minh'
+                ? 'Tài khoản chưa kích hoạt. Vui lòng mở email và bấm link kích hoạt (hoặc nhờ quản lý gửi lại).'
+                : 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản lý.';
+            $this->log('dang_nhap_that_bai', $request, $this->ctx($taiKhoan, 'trang_thai=' . $taiKhoan->trang_thai));
+            return back()->withErrors(['ten_tk' => $msg])->withInput($request->only('ten_tk'));
+        }
+
         RateLimiter::clear($ipKey);
         $taiKhoan->update(['dang_nhap_sai' => 0, 'khoa_den' => null]);
 
@@ -228,8 +236,10 @@ class AuthController extends Controller
         $email = $tk->nhanVien->email;
         try {
             Mail::to($email)->send(new OtpMail($tk->nhanVien->ten_nv ?? $tk->ten_tk, $otp, $phut));
+            EmailLog::ghi('otp', $email, true, 'Mã OTP đăng nhập', $tk->ma_tai_khoan);
         } catch (\Throwable $e) {
             report($e);
+            EmailLog::ghi('otp', $email, false, 'Mã OTP đăng nhập', $tk->ma_tai_khoan, $e->getMessage());
             return back()->withErrors(['ten_tk' => 'Không gửi được email OTP. Vui lòng liên hệ quản trị.']);
         }
 
