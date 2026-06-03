@@ -80,11 +80,25 @@ class DinhMucSeeder extends Seeder
             ['MON028','NL030',50.00,'Hạt sen sấy'],
         ];
 
+        // Chỉ seed định mức cho nguyên liệu & món THỰC SỰ tồn tại (tránh lỗi FK
+        // khi dữ liệu seed bị lệch — vd tham chiếu nguyên liệu chưa được tạo).
+        $nlCo  = DB::table('NGUYEN_LIEU')->pluck('ma_nl')->flip();
+        $monCo = DB::table('MON')->pluck('ma_mon')->flip();
+
+        $boQua = 0;
         foreach ($rows as [$maMon, $maNl, $soLuong, $moTa]) {
+            if (! isset($nlCo[$maNl]) || ! isset($monCo[$maMon])) {
+                $boQua++;
+                continue;
+            }
             DB::table('DINH_MUC')->updateOrInsert(
                 ['ma_mon' => $maMon, 'ma_nl' => $maNl],
                 ['so_luong_dung' => $soLuong, 'mo_ta' => $moTa]
             );
+        }
+
+        if ($boQua > 0) {
+            $this->command?->warn("DinhMucSeeder: bỏ qua {$boQua} dòng do nguyên liệu/món chưa tồn tại.");
         }
     }
 }
