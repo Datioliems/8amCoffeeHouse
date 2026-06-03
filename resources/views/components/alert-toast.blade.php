@@ -9,5 +9,5 @@ $cls = $type === 'success'
      class="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3
             border rounded-xl text-sm shadow-sm {{ $cls }}">
     {{ $message }}
-    <button @click="show = false" class="ml-2 opacity-60">✕</button>
+    <button @click="show = false" class="ml-2 text-base leading-none opacity-60">&times;</button>
 </div>

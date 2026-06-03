@@ -49,11 +49,35 @@ class OrderController extends Controller
             ->where('ma_chi_nhanh', $maChiNhanh)
             ->firstOrFail();
 
-        $activeOrders = Order::with(['chiTietOrders.mon', 'chiTietOrders.options'])
-            ->where('ma_ban', $maBan)
-            ->whereIn('trang_thai', ['dang_chon','cho_xac_nhan','da_xac_nhan','dang_pha_che','da_phuc_vu'])
-            ->orderByDesc('gio_order')
-            ->get();
+        // Dọn giỏ rác (dang_chon rỗng) của bàn này trước khi hiển thị.
+        $this->orderService->purgeEmptyCarts($maBan);
+
+        // 1 order/bàn: nếu đã có đơn đang mở thì NẠP SẴN giỏ để sửa trực tiếp.
+        $openOrder = $this->orderService->openOrderForTable($maBan);
+
+        $cartSeed = [];
+        $cust = ['ten' => '', 'sdt' => ''];
+        $hinhThuc = 'tai_ban';
+        if ($openOrder) {
+            $hinhThuc = $openOrder->hinh_thuc ?? 'tai_ban';
+            $cust = ['ten' => (string) ($openOrder->ten_khach ?? ''), 'sdt' => (string) ($openOrder->sdt_khach ?? '')];
+            foreach ($openOrder->chiTietOrders as $ct) {
+                $temp = ''; $tops = [];
+                foreach ($ct->options as $op) {
+                    if ($op->loai_option === 'temperature') $temp = $op->ten_lua_chon;
+                    elseif ($op->loai_option === 'topping')  $tops[] = ['value' => $op->ten_lua_chon, 'price' => (int) $op->gia_them];
+                }
+                $cartSeed[] = [
+                    'ma_mon'   => $ct->ma_mon,
+                    'ten'      => $ct->mon->ten_mon ?? $ct->ma_mon,
+                    'gia'      => (int) $ct->don_gia_tai_thoi_diem,
+                    'qty'      => (int) $ct->so_luong,
+                    'temp'     => $temp,
+                    'toppings' => $tops,
+                    'ghi_chu'  => (string) ($ct->ghi_chu ?? ''),
+                ];
+            }
+        }
 
         $mons = Mon::with('danhMuc')
             ->where('trang_thai', 'active')
@@ -61,7 +85,7 @@ class OrderController extends Controller
             ->get();
         $toppings = \App\Models\Topping::where('trang_thai', 'active')->orderBy('ten_topping')->get();
 
-        return view('staff.order-table', compact('ban', 'activeOrders', 'mons', 'toppings'));
+        return view('staff.order-table', compact('ban', 'openOrder', 'cartSeed', 'cust', 'hinhThuc', 'mons', 'toppings'));
     }
 
     /** Nhân viên tạo đơn đặt tại bàn. */
@@ -76,6 +100,7 @@ class OrderController extends Controller
             'ten_kh'     => 'nullable|string|max:100',
             'sdt_kh'     => ['nullable', 'string', 'regex:/^0[0-9]{9}$/'],
             'hinh_thuc'  => 'required|in:tai_ban,mang_ve',
+            'action'     => 'nullable|in:confirm,pay',
             'items' => 'required|array',
             'items.*.ma_mon' => 'nullable|exists:MON,ma_mon',
             'items.*.so_luong' => 'nullable|integer|min:0|max:99',
@@ -96,17 +121,39 @@ class OrderController extends Controller
             return back()->withInput()->withErrors(['items' => 'Vui lòng chọn ít nhất một món.']);
         }
 
-        $maOrder = $this->orderService->createDineInOrder(
-            maBan:      $maBan,
-            maChiNhanh: $maChiNhanh,
-            items:      $items,
-            hinhThuc:   $validated['hinh_thuc'],
-            tenKh:      $validated['ten_kh'] ?? null,
-            sdtKh:      $validated['sdt_kh'] ?? null,
-        );
+        // 1 order/bàn: nếu đã có đơn mở thì SỬA đơn đó; nếu chưa có thì tạo mới.
+        $open = $this->orderService->openOrderForTable($maBan);
+        if ($open) {
+            $this->orderService->syncOrderItems(
+                $open->ma_order, $items,
+                $validated['hinh_thuc'], $validated['ten_kh'] ?? null, $validated['sdt_kh'] ?? null
+            );
+            $maOrder = $open->ma_order;
+            $isNew = false;
+        } else {
+            $maOrder = $this->orderService->createDineInOrder(
+                maBan:      $maBan,
+                maChiNhanh: $maChiNhanh,
+                items:      $items,
+                hinhThuc:   $validated['hinh_thuc'],
+                tenKh:      $validated['ten_kh'] ?? null,
+                sdtKh:      $validated['sdt_kh'] ?? null,
+            );
+            $isNew = true;
+        }
 
-        return redirect()->route('orders.show', $maOrder)
-            ->with('success', 'Đã tạo đơn cho bàn ' . $ban->so_ban . '. Xác nhận để chuyển pha chế.');
+        // Nút "Thanh toán" → sang trang thanh toán luôn.
+        if (($validated['action'] ?? 'confirm') === 'pay') {
+            return redirect()->route('payment.show', $maOrder)
+                ->with('success', 'Đã lưu đơn bàn ' . $ban->so_ban . '. Tiến hành thanh toán.');
+        }
+
+        // Nút "Xác nhận" → đưa về ĐÃ XÁC NHẬN (nếu đang chờ) rồi về order board.
+        if (Order::where('ma_order', $maOrder)->value('trang_thai') === 'cho_xac_nhan') {
+            $this->orderService->updateStatus($maOrder, 'da_xac_nhan');
+        }
+        return redirect()->route('orders.index')
+            ->with('success', ($isNew ? 'Đã tạo và xác nhận' : 'Đã cập nhật') . ' đơn cho bàn ' . $ban->so_ban . '.');
     }
 
     /** JSON polling cho order board — gọi bằng fetch mỗi 10s */

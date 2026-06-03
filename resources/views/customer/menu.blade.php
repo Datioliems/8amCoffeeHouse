@@ -59,7 +59,13 @@
             </div>
         </div>
     </div>
-    <p class="px-5 pb-5 pt-2 text-xs text-white/55">🟢 Trống · 🔴 Có khách · 🟡 Đặt trước · 🔵 Đang chọn — kéo để xoay, cuộn để phóng to.</p>
+    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 px-5 pb-5 pt-2 text-xs text-white/55">
+        <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#CADCAC]"></span> Trống ·
+        <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#E82C2A]"></span> Có khách ·
+        <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#E0A800]"></span> Đặt trước ·
+        <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#5B8DEF]"></span> Đang chọn
+        <span class="w-full text-white/45">Kéo để xoay, cuộn để phóng to.</span>
+    </p>
 </section>
 
 {{-- Danh mục --}}

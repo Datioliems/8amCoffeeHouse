@@ -7,8 +7,7 @@
 
     {{-- ── DỰ BÁO DOANH THU ─────────────────────────────────────── --}}
     <section>
-        <div class="mb-3 flex items-center gap-2">
-            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFF0D6]">📈</span>
+        <div class="mb-3">
             <h2 class="text-base font-semibold">Dự báo doanh thu 7 ngày tới</h2>
         </div>
 
@@ -16,7 +15,7 @@
             <div class="rounded-3xl border border-[#522C25]/10 bg-white p-5 shadow-sm">
                 <p class="text-xs uppercase tracking-wide text-[#522C25]/55">Xu hướng</p>
                 <p class="mt-1 text-2xl font-semibold {{ $forecast['trend']==='tăng' ? 'text-emerald-600' : ($forecast['trend']==='giảm' ? 'text-[#BB0011]' : 'text-[#522C25]') }}">
-                    {{ $forecast['trend']==='tăng' ? '▲' : ($forecast['trend']==='giảm' ? '▼' : '▬') }} {{ ucfirst($forecast['trend']) }}
+                    {{ ucfirst($forecast['trend']) }}
                 </p>
             </div>
             <div class="rounded-3xl border border-[#522C25]/10 bg-white p-5 shadow-sm">
@@ -45,8 +44,7 @@
 
     {{-- ── LUẬT GỢI Ý MÓN MUA KÈM ───────────────────────────────── --}}
     <section>
-        <div class="mb-3 flex items-center gap-2">
-            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFF0D6]">🧺</span>
+        <div class="mb-3">
             <h2 class="text-base font-semibold">Phân tích giỏ hàng — món hay đi cùng nhau</h2>
         </div>
 

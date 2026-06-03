@@ -37,7 +37,7 @@
                     <div>
                         <p class="mb-0.5 text-xs text-gray-400">Hình thức</p>
                         <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ $order->dung_coc_nhua ? 'bg-[#FFE3D6] text-[#9a3412]' : 'bg-[#E8F0DD] text-[#3f5325]' }}">
-                            {{ $order->dung_coc_nhua ? '🥤 Mang về (cốc nhựa)' : '🍵 Tại bàn' }}
+                            {{ $order->dung_coc_nhua ? 'Mang về (cốc nhựa)' : 'Tại bàn' }}
                         </span>
                     </div>
                     <div>

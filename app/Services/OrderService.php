@@ -160,6 +160,31 @@ class OrderService
         });
     }
 
+    /**
+     * Đồng bộ (ghi đè) toàn bộ món của một đơn đang mở — dùng khi sửa đơn tại bàn.
+     * Xóa dòng cũ + options rồi thêm lại theo danh sách mới; cập nhật khách/hình thức.
+     */
+    public function syncOrderItems(string $maOrder, array $items, ?string $hinhThuc = null, ?string $tenKh = null, ?string $sdtKh = null): void
+    {
+        DB::transaction(function () use ($maOrder, $items, $hinhThuc, $tenKh, $sdtKh) {
+            $order = Order::where('ma_order', $maOrder)->lockForUpdate()->firstOrFail();
+
+            $oldIds = ChiTietOrder::where('ma_order', $maOrder)->pluck('id');
+            ChiTietOrderOption::whereIn('chi_tiet_id', $oldIds)->delete();
+            ChiTietOrder::where('ma_order', $maOrder)->delete();
+
+            $this->attachItems($maOrder, $items);
+
+            $changes = [];
+            if ($hinhThuc !== null) $changes['hinh_thuc'] = $hinhThuc === 'mang_ve' ? 'mang_ve' : 'tai_ban';
+            if ($tenKh !== null)    $changes['ten_khach'] = $tenKh ?: $order->ten_khach;
+            if ($sdtKh !== null)    $changes['sdt_khach'] = $sdtKh ?: $order->sdt_khach;
+            if ($changes) $order->update($changes);
+
+            $this->log($maOrder, 'cap_nhat_mon', data: ['so_dong_mon' => count($items)]);
+        });
+    }
+
     /** Thêm danh sách dòng món vào một đơn (dùng chung cho takeaway / dine-in). */
     private function attachItems(string $maOrder, array $items): void
     {
@@ -507,6 +532,31 @@ class OrderService
 
             return $maOrderMoi;
         });
+    }
+
+    /** Dọn "giỏ rác": đơn dang_chon KHÔNG có món nào (khách quét QR rồi bỏ). */
+    public function purgeEmptyCarts(?string $maBan = null): int
+    {
+        $q = Order::where('trang_thai', 'dang_chon')->whereDoesntHave('chiTietOrders');
+        if ($maBan) {
+            $q->where('ma_ban', $maBan);
+        }
+        $ids = $q->pluck('ma_order');
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+        OrderLog::whereIn('ma_order', $ids)->delete();
+        return Order::whereIn('ma_order', $ids)->delete();
+    }
+
+    /** Đơn đang mở của một bàn (1 order/bàn). */
+    public function openOrderForTable(string $maBan): ?Order
+    {
+        return Order::with(['chiTietOrders.mon', 'chiTietOrders.options', 'hoaDon'])
+            ->where('ma_ban', $maBan)
+            ->whereIn('trang_thai', ['cho_xac_nhan', 'da_xac_nhan', 'dang_pha_che', 'da_phuc_vu'])
+            ->orderByDesc('ngay_order')->orderByDesc('gio_order')
+            ->first();
     }
 
     public function countByStatus(string $maChiNhanh): array

@@ -45,8 +45,7 @@
         {{-- GỢI Ý MÓN MUA KÈM (AI market-basket) --}}
         @if(!empty($suggestions))
         <div class="mt-6">
-            <div class="mb-3 flex items-center gap-2">
-                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFF0D6] text-sm">✨</span>
+            <div class="mb-3">
                 <p class="am-headline text-sm font-semibold text-[#1A1A1A]">Có thể bạn cũng thích</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -82,12 +81,12 @@
                     <label class="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition"
                            :class="ht==='tai_ban' ? 'border-[#52613B] bg-[#E8F0DD] text-[#3f5325]' : 'border-[#522C25]/15 bg-white text-[#522C25]'">
                         <input type="radio" name="hinh_thuc" value="tai_ban" x-model="ht" class="hidden">
-                        🍵 Uống tại bàn
+                        Uống tại bàn
                     </label>
                     <label class="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition"
                            :class="ht==='mang_ve' ? 'border-[#9a3412] bg-[#FFE3D6] text-[#9a3412]' : 'border-[#522C25]/15 bg-white text-[#522C25]'">
                         <input type="radio" name="hinh_thuc" value="mang_ve" x-model="ht" class="hidden">
-                        🥤 Mang về (cốc nhựa)
+                        Mang về (cốc nhựa)
                     </label>
                 </div>
             </div>

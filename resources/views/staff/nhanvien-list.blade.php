@@ -181,7 +181,7 @@
                                 @if($a->trang_thai==='cho_xac_minh')
                                 <form method="POST" action="{{ route('nhanvien.resend', $a->ma_tai_khoan) }}">
                                     @csrf
-                                    <button class="text-xs font-semibold text-[#8B5A2B] hover:underline">↻ Gửi lại email kích hoạt</button>
+                                    <button class="text-xs font-semibold text-[#8B5A2B] hover:underline">Gửi lại email kích hoạt</button>
                                 </form>
                                 @endif
                                 <form method="POST" action="{{ route('nhanvien.destroy', $a->ma_tai_khoan) }}"

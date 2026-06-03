@@ -70,9 +70,9 @@
                         <td class="px-4 py-3 text-[#522C25]/70">{{ $log->tieu_de }}</td>
                         <td class="px-4 py-3">
                             @if($log->trang_thai === 'thanh_cong')
-                                <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">✓ Thành công</span>
+                                <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Thành công</span>
                             @else
-                                <span class="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#BB0011]" title="{{ $log->loi }}">✕ Thất bại</span>
+                                <span class="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#BB0011]" title="{{ $log->loi }}">Thất bại</span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">

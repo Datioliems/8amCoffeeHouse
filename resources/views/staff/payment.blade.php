@@ -21,7 +21,7 @@
                     <h2 class="mt-1 text-lg font-semibold text-[#1A1A1A]">Đơn #{{ $order->ma_order }}</h2>
                     <p class="mt-1 text-sm text-[#522C25]/60">{{ $order->ban ? 'Bàn ' . $order->ban->so_ban : 'Mang về' }} · {{ $order->chiTietOrders->sum('so_luong') }} món</p>
                     <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $order->dung_coc_nhua ? 'bg-[#FFE3D6] text-[#9a3412]' : 'bg-[#E8F0DD] text-[#3f5325]' }}">
-                        {{ $order->dung_coc_nhua ? '🥤 Mang về (cốc nhựa)' : '🍵 Uống tại bàn' }}
+                        {{ $order->dung_coc_nhua ? 'Mang về (cốc nhựa)' : 'Uống tại bàn' }}
                     </span>
                 </div>
                 <div class="rounded-xl bg-[#FFF7E8] px-4 py-3 text-left sm:text-right">

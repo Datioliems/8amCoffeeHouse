@@ -20,7 +20,7 @@
         <div class="flex flex-col items-end gap-1.5">
             <x-order-status-badge :status="$order->trang_thai" />
             <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $order->dung_coc_nhua ? 'bg-[#FFE3D6] text-[#9a3412]' : 'bg-[#E8F0DD] text-[#3f5325]' }}">
-                {{ $order->dung_coc_nhua ? '🥤 Mang về' : '🍵 Tại bàn' }}
+                {{ $order->dung_coc_nhua ? 'Mang về' : 'Tại bàn' }}
             </span>
         </div>
     </div>

@@ -56,7 +56,7 @@
 </head>
 <body>
     <div class="toolbar">
-        <button class="btn btn-print" onclick="window.print()">🖨️ In poster</button>
+        <button class="btn btn-print" onclick="window.print()">In poster</button>
         <a class="btn btn-ghost" href="{{ url()->previous() }}">← Quay lại</a>
     </div>
 
