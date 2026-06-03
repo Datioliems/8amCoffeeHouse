@@ -33,6 +33,15 @@
                 Hết hàng
             </span>
         @endif
+
+        @if($mon->model_3d_url)
+            <button type="button"
+                    onclick="window.viewMon3D(@json($mon->model_3d_url), @json($mon->ten_mon))"
+                    class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur transition hover:bg-black/80">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+                Xem 3D
+            </button>
+        @endif
     </div>
 
     <div class="flex min-h-36 flex-1 flex-col p-4">

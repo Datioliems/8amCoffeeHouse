@@ -5,7 +5,7 @@
 @if($maOrder)
 <meta name="ma-order" content="{{ $maOrder }}">
 @endif
-@vite('resources/js/showroom.js')
+@vite(['resources/js/showroom.js', 'resources/js/mon-viewer.js'])
 @endpush
 
 @section('content')

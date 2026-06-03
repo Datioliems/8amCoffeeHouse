@@ -41,6 +41,37 @@ class Mon extends Model
         return asset('images/' . ltrim($image, '/'));
     }
 
+    /** URL model 3D của món (trên CDN/R2). Tên file phân biệt hoa/thường. Null nếu món chưa có model. */
+    public function getModel3dUrlAttribute(): ?string
+    {
+        $map = [
+            'MON002' => 'americano_da.glb',
+            'MON005' => 'saltedcaramel.glb',
+            'MON006' => 'Caphemuoi.glb',
+            'MON007' => 'ca_phe_trung.glb',
+            'MON008' => 'lady_sweet.glb',
+            'MON009' => 'ginger_latte.glb',
+            'MON013' => 'cold_brew_mo.glb',
+            'MON014' => 'cold_brew_me.glb',
+            'MON015' => 'cold_brew_tonic.glb',
+            'MON016' => 'cold_brew_nhiet_doi.glb',
+            'MON017' => 'den.glb',
+            'MON018' => 'nau.glb',
+            'MON019' => 'Bacsiu.glb',
+            'MON020' => 'Suachuacaphe.glb',
+            'MON021' => 'ca_cao.glb',
+            'MON022' => 'chanh_xi_muoi.glb',
+            'MON023' => 'mot_chanh_leo.glb',
+            'MON024' => 'tra_oi_hong.glb',
+            'MON025' => 'tra_chanh_dao.glb',
+            'MON026' => 'banh_sung_bo.glb',
+            'MON027' => 'banh_sung_scl.glb',
+            'MON028' => 'hat_Sen_say.glb',
+        ];
+        $file = $map[$this->ma_mon] ?? null;
+        return $file ? \App\Support\Cdn::url('models/' . $file) : null;
+    }
+
     public function danhMuc()  { return $this->belongsTo(DanhMuc::class, 'ma_danh_muc', 'ma_danh_muc'); }
     public function dinhMucs() { return $this->hasMany(DinhMuc::class, 'ma_mon', 'ma_mon'); }
     public function options()  { return $this->hasMany(MonOption::class, 'ma_mon', 'ma_mon'); }
