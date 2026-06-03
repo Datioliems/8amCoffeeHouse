@@ -14,3 +14,13 @@ yarn-error.log
 /.idea
 /.vscode
 /storage/backup_before_encrypt.sql
+
+# Model 3D món để trên Cloudflare R2 — KHÔNG commit (nặng). Giữ model quán gốc.
+/public/models/*.glb
+!/public/models/cafe_opt.glb
+!/public/models/cafe_CN002.glb
+!/public/models/cafe_full.glb
+!/public/models/floorplan.glb
+
+# Thu muc model 3D goc (rat nang) - khong commit, da co tren R2
+/MoHinh_Nuoc/

@@ -3,7 +3,25 @@
 @section('page-title', 'Phân tích & dự báo (AI)')
 
 @section('content')
-<div class="mx-auto max-w-6xl space-y-6">
+<div class="mx-auto max-w-6xl space-y-6" x-data="{ guide: false }">
+
+    {{-- Hướng dẫn sử dụng --}}
+    <div class="rounded-2xl border border-[#522C25]/10 bg-[#FFF7E8] p-4">
+        <button type="button" @click="guide = !guide" class="flex w-full items-center justify-between text-left">
+            <span class="text-sm font-semibold text-[#8B5A2B]">Hướng dẫn đọc trang Phân tích AI</span>
+            <span class="text-[#8B5A2B]" x-text="guide ? '−' : '+'"></span>
+        </button>
+        <div x-show="guide" x-cloak class="mt-3 space-y-2 text-sm leading-6 text-[#522C25]/75">
+            <p><strong>1. Dự báo doanh thu:</strong> dùng hồi quy tuyến tính trên doanh thu các ngày gần đây để ước tính 7 ngày tới. <em>Xu hướng</em> (tăng/giảm) cho biết chiều biến động; <strong>R²</strong> càng gần 1 thì dự báo càng đáng tin (R² thấp = dữ liệu dao động, chỉ tham khảo).</p>
+            <p><strong>2. Phân tích giỏ hàng (luật kết hợp):</strong> tìm các cặp món hay được mua cùng nhau.</p>
+            <ul class="ml-4 list-disc">
+                <li><strong>Số đơn:</strong> số đơn có chứa cả hai món.</li>
+                <li><strong>Độ tin (confidence):</strong> trong các đơn có món A, bao nhiêu % cũng có món B.</li>
+                <li><strong>Lift:</strong> &gt; 1 nghĩa là hai món đi cùng nhau nhiều hơn mức ngẫu nhiên → nên gợi ý/combo. ≤ 1 thì liên hệ yếu.</li>
+            </ul>
+            <p><strong>3. Tùy chỉnh:</strong> chọn <em>phạm vi theo ngày</em> hoặc <em>số đơn gần nhất</em>, đặt <em>ngưỡng tối thiểu</em> (lọc cặp hiếm) rồi bấm <strong>Áp dụng</strong>. Dữ liệu càng nhiều, luật càng chính xác.</p>
+        </div>
+    </div>
 
     {{-- ── DỰ BÁO DOANH THU ─────────────────────────────────────── --}}
     <section>

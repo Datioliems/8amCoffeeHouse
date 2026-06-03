@@ -42,31 +42,22 @@
             <span class="am-mono text-xl font-bold">{{ number_format($total, 0, ',', '.') }}đ</span>
         </div>
 
-        {{-- GỢI Ý MÓN MUA KÈM (AI market-basket) --}}
+        {{-- GỢI Ý MÓN MUA KÈM (AI market-basket) — nhỏ, mang tính bổ trợ --}}
         @if(!empty($suggestions))
-        <div class="mt-6">
-            <div class="mb-3">
-                <p class="am-headline text-sm font-semibold text-[#1A1A1A]">Có thể bạn cũng thích</p>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
+        <div class="mt-5">
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#522C25]/45">Gợi ý dùng kèm</p>
+            <div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide">
                 @foreach($suggestions as $sg)
-                <div class="flex flex-col justify-between rounded-2xl border border-[#522C25]/10 bg-[#FCFAFA] p-3">
-                    <div>
-                        <p class="am-headline text-sm font-semibold leading-snug text-[#1A1A1A]">{{ $sg['ten_mon'] }}</p>
-                        <p class="am-mono mt-1 text-xs font-bold text-[#E82C2A]">{{ number_format($sg['don_gia'], 0, ',', '.') }}đ</p>
-                        @if(($sg['confidence'] ?? 0) > 0)
-                            <p class="mt-1 text-[11px] text-[#522C25]/55">{{ $sg['confidence'] }}% khách mua kèm</p>
-                        @endif
-                    </div>
-                    <form method="POST" action="{{ route('customer.addItem', $order->ma_order) }}" class="mt-2">
-                        @csrf
-                        <input type="hidden" name="ma_mon" value="{{ $sg['ma_mon'] }}">
-                        <input type="hidden" name="so_luong" value="1">
-                        <button class="w-full rounded-full bg-[#1A1A1A] py-2 text-xs font-semibold text-white transition hover:bg-[#E82C2A] active:scale-[0.98]">
-                            + Thêm
-                        </button>
-                    </form>
-                </div>
+                <form method="POST" action="{{ route('customer.addItem', $order->ma_order) }}" class="shrink-0">
+                    @csrf
+                    <input type="hidden" name="ma_mon" value="{{ $sg['ma_mon'] }}">
+                    <input type="hidden" name="so_luong" value="1">
+                    <button class="flex items-center gap-2 rounded-full border border-[#522C25]/12 bg-white px-3 py-1.5 text-xs text-[#522C25] transition hover:border-[#E82C2A]/40 hover:bg-[#FFF1F0]">
+                        <span class="font-medium">{{ $sg['ten_mon'] }}</span>
+                        <span class="text-[#E82C2A]">+{{ number_format($sg['don_gia'], 0, ',', '.') }}đ</span>
+                        <span class="flex h-4 w-4 items-center justify-center rounded-full bg-[#E82C2A] text-[10px] font-bold text-white">+</span>
+                    </button>
+                </form>
                 @endforeach
             </div>
         </div>

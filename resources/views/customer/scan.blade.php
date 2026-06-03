@@ -26,10 +26,14 @@
                 <input type="text" name="ten_kh" placeholder="Nhập tên của bạn" required value="{{ old('ten_kh', $profile['ten_kh'] ?? '') }}"
                        class="am-mono w-full rounded-3xl border-0 bg-[#F2F2F2] px-6 py-4 text-center text-sm text-[#1A1A1A] placeholder:text-[#5D3F3C]/45 focus:ring-2 focus:ring-[#E82C2A]">
                 @error('ten_kh') <p class="text-center text-xs text-[#BB0011]">{{ $message }}</p> @enderror
-                <input type="text" name="sdt_kh" placeholder="Số điện thoại" value="{{ old('sdt_kh', $profile['sdt_kh'] ?? '') }}"
+                <input type="text" name="sdt_kh" placeholder="Số điện thoại (10 số, bắt đầu bằng 0)"
+                       value="{{ old('sdt_kh', $profile['sdt_kh'] ?? '') }}"
+                       inputmode="numeric" maxlength="10" pattern="0[0-9]{9}"
+                       title="Số điện thoại phải gồm đúng 10 chữ số, bắt đầu bằng 0"
+                       oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10)"
                        class="am-mono w-full rounded-3xl border-0 bg-[#F2F2F2] px-6 py-4 text-center text-sm text-[#1A1A1A] placeholder:text-[#5D3F3C]/45 focus:ring-2 focus:ring-[#E82C2A]">
                 <p class="px-2 text-center text-xs leading-5 text-[#5D3F3C]/70">
-                    Bạn có thể nhập số điện thoại để tham gia danh sách khách hàng và nhận khuyến mãi trong tương lai.
+                    Số điện thoại phải gồm <strong>đúng 10 chữ số, bắt đầu bằng 0</strong>. Có thể bỏ trống nếu không muốn lưu.
                 </p>
                 @error('sdt_kh') <p class="text-center text-xs text-[#BB0011]">{{ $message }}</p> @enderror
                 <button type="submit"

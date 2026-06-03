@@ -149,6 +149,10 @@ function close() {
     modal.style.display = 'none';
     running = false;
     if (rafId) cancelAnimationFrame(rafId);
+    // Giải phóng model + xóa cache để không tích lũy bộ nhớ sau khi xem nhiều món.
+    clearModel();
+    THREE.Cache.clear();
+    if (renderer) renderer.renderLists.dispose();
 }
 
 window.viewMon3D = function (url, name) {

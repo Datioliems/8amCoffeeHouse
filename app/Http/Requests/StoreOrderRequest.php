@@ -30,7 +30,7 @@ class StoreOrderRequest extends FormRequest
     {
         return [
             'ten_kh' => 'required|string|max:100',
-            'sdt_kh' => 'nullable|string|max:20|regex:/^[0-9+\-\s()]+$/',
+            'sdt_kh' => ['nullable', 'string', 'regex:/^0[0-9]{9}$/'],
         ];
     }
 
@@ -39,8 +39,7 @@ class StoreOrderRequest extends FormRequest
         return [
             'ten_kh.required' => 'Vui lòng nhập tên khách hàng.',
             'ten_kh.max' => 'Tên không được quá 100 ký tự.',
-            'sdt_kh.max' => 'Số điện thoại không được quá 20 ký tự.',
-            'sdt_kh.regex' => 'Số điện thoại chỉ chứa số, dấu +, dấu -, khoảng trắng hoặc ngoặc.',
+            'sdt_kh.regex' => 'Số điện thoại phải gồm đúng 10 chữ số, bắt đầu bằng 0.',
         ];
     }
 }
