@@ -5,7 +5,7 @@
 
 @section('content')
 <div id="floorplan-root"
-     data-model-url="{{ asset('models/'.$model3d) }}"
+     data-model-url="{{ \App\Support\Cdn::url('models/'.$model3d) }}"
      data-tables-url="{{ route('floorplan.tables') }}">
 
     {{-- Thanh điều khiển: nút tầng sinh động theo chi nhánh --}}

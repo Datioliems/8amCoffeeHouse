@@ -35,7 +35,7 @@
         <h2 class="am-headline mt-1 text-xl font-semibold text-white">Sơ đồ 3D quán 8AM</h2>
     </div>
     <div id="showroom-root" class="mt-4 grid grid-cols-1 gap-0 px-0 lg:grid-cols-4 lg:gap-4 lg:px-5"
-         data-model-url="{{ asset('models/'.$model3d) }}"
+         data-model-url="{{ \App\Support\Cdn::url('models/'.$model3d) }}"
          data-img-base="{{ asset('images') }}"
          data-photo-url="{{ asset('images/8-AM-Coffee-Roastery-4.jpg') }}"
          data-tables-url="{{ route('customer.tables', $ban->ma_ban) }}"
