@@ -41,6 +41,52 @@
         </div>
     </div>
 
+    {{-- ── YÊU CẦU ĐỔI BÀN CHỜ DUYỆT (poll) ────────────────────── --}}
+    <div x-data="moveReqs()" x-init="init()" x-show="list.length > 0" x-cloak
+         class="rounded-2xl border border-amber-300 bg-amber-50 p-4">
+        <p class="mb-2 text-sm font-bold text-amber-800">Yêu cầu đổi bàn chờ duyệt (<span x-text="list.length"></span>)</p>
+        <div class="space-y-2">
+            <template x-for="r in list" :key="r.id">
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 ring-1 ring-amber-200">
+                    <span class="text-sm text-[#522C25]">
+                        Đơn <span class="font-mono font-semibold" x-text="r.ma_order"></span>:
+                        Bàn <strong x-text="r.ban_cu"></strong> → Bàn <strong x-text="r.ban_moi"></strong>
+                        <span class="text-[#522C25]/45" x-text="r.luc ? '· ' + r.luc : ''"></span>
+                    </span>
+                    <span class="flex gap-2">
+                        <button @click="act(r.id, 'duyet')" class="rounded-full bg-[#52613B] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#445230]">Duyệt</button>
+                        <button @click="act(r.id, 'tu-choi')" class="rounded-full bg-[#F2F2F2] px-4 py-1.5 text-xs font-semibold text-[#BB0011] hover:bg-[#FFE3E3]">Từ chối</button>
+                    </span>
+                </div>
+            </template>
+        </div>
+    </div>
+    <script>
+        function moveReqs() {
+            return {
+                list: [],
+                init() { this.fetchList(); setInterval(() => this.fetchList(), 8000); },
+                async fetchList() {
+                    try {
+                        const r = await fetch('{{ route('movereq.index') }}', { headers: { Accept: 'application/json' } });
+                        const d = await r.json();
+                        this.list = d.requests || [];
+                    } catch (e) {}
+                },
+                async act(id, action) {
+                    try {
+                        await fetch(`/yeu-cau-doi-ban/${id}/${action}`, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, Accept: 'application/json' },
+                        });
+                        this.list = this.list.filter(x => x.id !== id);
+                        window.location.reload();
+                    } catch (e) { alert('Lỗi xử lý yêu cầu đổi bàn.'); }
+                },
+            };
+        }
+    </script>
+
     {{-- ── SƠ ĐỒ BÀN (đặt món tại bàn) ─────────────────────────── --}}
     <div class="rounded-[2rem] bg-white p-4 ring-1 ring-[#522C25]/10 am-shadow" x-data="{ open: true }">
         <button type="button" @click="open = !open"

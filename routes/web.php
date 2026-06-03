@@ -114,6 +114,11 @@ Route::middleware(['auth.staff'])->group(function () {
         Route::post('/{ma_order}/split',     [OrderController::class, 'split']       )->name('split');
     });
 
+    // ── YÊU CẦU ĐỔI BÀN (khách gửi, nhân viên duyệt) ─────────
+    Route::get( '/yeu-cau-doi-ban',            [\App\Http\Controllers\TableMoveController::class, 'index']  )->name('movereq.index');
+    Route::post('/yeu-cau-doi-ban/{id}/duyet', [\App\Http\Controllers\TableMoveController::class, 'approve'])->name('movereq.approve');
+    Route::post('/yeu-cau-doi-ban/{id}/tu-choi',[\App\Http\Controllers\TableMoveController::class, 'reject'] )->name('movereq.reject');
+
     Route::prefix('payment')->name('payment.')->group(function () {
         Route::get( '/{ma_order}',       [PaymentController::class, 'show']    )->name('show');
         Route::post('/{ma_order}',       [PaymentController::class, 'process'] )->name('process');

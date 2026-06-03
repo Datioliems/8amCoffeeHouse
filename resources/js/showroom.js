@@ -239,10 +239,18 @@ function initShowroom(root) {
             const r = await fetch(moveTpl.replace('__TO__', toMa), {
                 method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' },
             });
-            if (!r.ok) throw new Error('move failed');
-            // Không truyền ma_order qua URL (GET) — server tự suy từ đơn dang_chon của bàn mới.
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok || data.ok === false) { throw new Error(data.msg || 'move failed'); }
+
+            // Đơn đã gửi/đã xác nhận → cần nhân viên duyệt: KHÔNG chuyển ngay.
+            if (data.pending) {
+                alert(data.msg || 'Đã gửi yêu cầu đổi bàn, vui lòng chờ nhân viên duyệt.');
+                if (btn) { btn.textContent = 'Đã gửi yêu cầu ✓'; }
+                return;
+            }
+            // Giỏ đang chọn (chưa gửi) → đổi ngay.
             window.location.href = redirectTpl.replace('__TO__', toMa);
-        } catch (e) { alert('Đổi bàn thất bại, thử lại nhé.'); showInfo(toMa); }
+        } catch (e) { alert(e.message || 'Đổi bàn thất bại, thử lại nhé.'); showInfo(toMa); }
     }
 
     window.addEventListener('resize', () => {

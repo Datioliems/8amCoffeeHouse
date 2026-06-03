@@ -123,15 +123,44 @@ class BanController extends Controller
             return response()->json(['ok' => false, 'msg' => 'Bàn đích không còn trống.'], 422);
         }
 
-        // (a) Khách phải sở hữu 1 đơn đang ở bàn nguồn (chống đổi bàn người khác)
         $owned = (array) session('customer_orders', []);
-        $ownsFrom = ! empty($owned) && DB::table('ORDERS')
+
+        // Đơn ĐÃ GỬI/ĐÃ XÁC NHẬN tại bàn nguồn → cần NHÂN VIÊN DUYỆT (không đổi ngay).
+        $activeOrder = ! empty($owned) ? DB::table('ORDERS')
             ->whereIn('ma_order', $owned)
             ->where('ma_ban', $maBan)
-            ->whereIn('trang_thai', array_merge(self::ACTIVE_ORDER, ['dang_chon']))
+            ->whereIn('trang_thai', self::ACTIVE_ORDER)
+            ->orderByDesc('ngay_order')->orderByDesc('gio_order')
+            ->first() : null;
+
+        if ($activeOrder) {
+            // Tránh tạo trùng yêu cầu đang chờ duyệt cho cùng đơn.
+            $existing = \App\Models\YeuCauDoiBan::where('ma_order', $activeOrder->ma_order)
+                ->where('trang_thai', 'cho_duyet')->first();
+            if ($existing) {
+                return response()->json(['ok' => true, 'pending' => true,
+                    'msg' => 'Bạn đã gửi yêu cầu đổi bàn, đang chờ nhân viên duyệt.']);
+            }
+            \App\Models\YeuCauDoiBan::create([
+                'ma_order'     => $activeOrder->ma_order,
+                'ma_ban_cu'    => $maBan,
+                'ma_ban_moi'   => $to,
+                'ma_chi_nhanh' => $ban->ma_chi_nhanh,
+                'trang_thai'   => 'cho_duyet',
+                'thoi_gian_tao'=> now(),
+            ]);
+            return response()->json(['ok' => true, 'pending' => true,
+                'msg' => 'Đã gửi yêu cầu đổi bàn tới nhân viên. Vui lòng chờ xác nhận.']);
+        }
+
+        // Chỉ có giỏ đang chọn (chưa gửi) → cho đổi NGAY (không cần duyệt).
+        $ownsDangChon = ! empty($owned) && DB::table('ORDERS')
+            ->whereIn('ma_order', $owned)
+            ->where('ma_ban', $maBan)
+            ->where('trang_thai', 'dang_chon')
             ->exists();
-        if (! $ownsFrom) {
-            return response()->json(['ok' => false, 'msg' => 'Bạn không có đơn ở bàn này để đổi.'], 403);
+        if (! $ownsDangChon) {
+            return response()->json(['ok' => false, 'msg' => 'Bạn chưa có đơn ở bàn này để đổi.'], 403);
         }
 
         return $this->doMove($maBan, $to, $ban->ma_chi_nhanh);
