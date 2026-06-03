@@ -75,8 +75,12 @@
                     <div x-show="cat === {{ $i }}" x-cloak class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                         @foreach($monsByCat[$catName] as $mon)
                         <div class="flex flex-col overflow-hidden rounded-2xl ring-1 ring-[#522C25]/10">
-                            <div class="aspect-[4/3] w-full overflow-hidden bg-[#F2F2F2]">
+                            <div class="relative aspect-[4/3] w-full overflow-hidden bg-[#F2F2F2]">
                                 @if($mon->image_url)<img src="{{ $mon->image_url }}" alt="{{ $mon->ten_mon }}" class="h-full w-full object-cover" loading="lazy">@endif
+                                @if($mon->model_3d_url)
+                                <button type="button" onclick="window.viewMon3D(@json($mon->model_3d_url), @json($mon->ten_mon))"
+                                        class="absolute right-2 top-2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur hover:bg-black/80">3D</button>
+                                @endif
                             </div>
                             <div class="flex flex-1 flex-col p-3">
                                 <p class="line-clamp-2 text-sm font-semibold text-[#1A1A1A]">{{ $mon->ten_mon }}</p>
@@ -293,4 +297,5 @@ function tableOrder(toppings, seed, cust, hinhThuc) {
     };
 }
 </script>
+@vite('resources/js/mon-viewer.js')
 @endsection
