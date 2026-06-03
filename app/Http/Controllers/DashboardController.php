@@ -106,11 +106,11 @@ class DashboardController extends Controller
             ->groupBy('gio')->pluck('v', 'gio');
         $hours = range(7, 22);
 
-        // Tại chỗ vs mang về (đơn đã thanh toán)
+        // Tại chỗ vs mang về (đơn đã thanh toán) — theo hình thức phục vụ thật (cốc nhựa)
         $channelRaw = Order::where('ma_chi_nhanh', $maChiNhanh)
             ->where('trang_thai', 'hoan_thanh')
-            ->selectRaw("CASE WHEN ma_ban IS NULL THEN 'mang_ve' ELSE 'tai_cho' END as k, COUNT(*) as v")
-            ->groupBy('k')->pluck('v', 'k');
+            ->selectRaw("hinh_thuc as k, COUNT(*) as v")
+            ->groupBy('hinh_thuc')->pluck('v', 'k');
 
         // Doanh thu theo danh mục (đơn đã thanh toán)
         $catRaw = DB::table('CHI_TIET_ORDER as ct')
@@ -144,8 +144,8 @@ class DashboardController extends Controller
                 'values' => array_map(fn($h) => (float) ($hourRaw[$h] ?? 0), $hours),
             ],
             'channel' => [
-                'labels' => ['Tại chỗ', 'Mang về'],
-                'values' => [(int) ($channelRaw['tai_cho'] ?? 0), (int) ($channelRaw['mang_ve'] ?? 0)],
+                'labels' => ['Tại bàn', 'Mang về'],
+                'values' => [(int) ($channelRaw['tai_ban'] ?? 0), (int) ($channelRaw['mang_ve'] ?? 0)],
             ],
             'category' => [
                 'labels' => $catRaw->pluck('k')->all(),

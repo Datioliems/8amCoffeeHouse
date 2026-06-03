@@ -42,6 +42,22 @@
         </div>
     </div>
 
+    {{-- ── SƠ ĐỒ BÀN (đặt món tại bàn) ─────────────────────────── --}}
+    <div class="rounded-[2rem] bg-white p-4 ring-1 ring-[#522C25]/10 am-shadow" x-data="{ open: true }">
+        <button type="button" @click="open = !open"
+                class="flex w-full items-center justify-between text-left">
+            <div>
+                <p class="text-xs uppercase tracking-[0.18em] text-[#522C25]/55">Table map</p>
+                <h3 class="mt-1 text-lg font-semibold">Chọn bàn để đặt món tại quầy</h3>
+            </div>
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#F2F2F2] text-[#522C25] transition"
+                  :class="open ? 'rotate-180' : ''">▾</span>
+        </button>
+        <div x-show="open" x-cloak class="mt-4">
+            <x-table-map :bans="$bans" :order-counts="$orderCounts" mode="order" />
+        </div>
+    </div>
+
     @if($status === 'hoan_thanh')
         <div class="overflow-hidden rounded-[2rem] bg-white ring-1 ring-[#522C25]/10 am-shadow">
             <div class="flex flex-col gap-2 border-b border-[#522C25]/10 p-5 sm:flex-row sm:items-center sm:justify-between">

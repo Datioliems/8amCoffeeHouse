@@ -42,8 +42,55 @@
             <span class="am-mono text-xl font-bold">{{ number_format($total, 0, ',', '.') }}đ</span>
         </div>
 
+        {{-- GỢI Ý MÓN MUA KÈM (AI market-basket) --}}
+        @if(!empty($suggestions))
+        <div class="mt-6">
+            <div class="mb-3 flex items-center gap-2">
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFF0D6] text-sm">✨</span>
+                <p class="am-headline text-sm font-semibold text-[#1A1A1A]">Có thể bạn cũng thích</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                @foreach($suggestions as $sg)
+                <div class="flex flex-col justify-between rounded-2xl border border-[#522C25]/10 bg-[#FCFAFA] p-3">
+                    <div>
+                        <p class="am-headline text-sm font-semibold leading-snug text-[#1A1A1A]">{{ $sg['ten_mon'] }}</p>
+                        <p class="am-mono mt-1 text-xs font-bold text-[#E82C2A]">{{ number_format($sg['don_gia'], 0, ',', '.') }}đ</p>
+                        @if(($sg['confidence'] ?? 0) > 0)
+                            <p class="mt-1 text-[11px] text-[#522C25]/55">{{ $sg['confidence'] }}% khách mua kèm</p>
+                        @endif
+                    </div>
+                    <form method="POST" action="{{ route('customer.addItem', $order->ma_order) }}" class="mt-2">
+                        @csrf
+                        <input type="hidden" name="ma_mon" value="{{ $sg['ma_mon'] }}">
+                        <input type="hidden" name="so_luong" value="1">
+                        <button class="w-full rounded-full bg-[#1A1A1A] py-2 text-xs font-semibold text-white transition hover:bg-[#E82C2A] active:scale-[0.98]">
+                            + Thêm
+                        </button>
+                    </form>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         <form method="POST" action="{{ route('customer.confirm', $order->ma_order) }}" class="mt-5">
             @csrf
+            {{-- Hình thức phục vụ: uống tại bàn (ly thật) hay mang về (cốc nhựa) --}}
+            <div class="mb-4" x-data="{ ht: '{{ $order->hinh_thuc ?? 'tai_ban' }}' }">
+                <p class="am-headline mb-2 text-sm font-semibold text-[#1A1A1A]">Bạn dùng tại quán hay mang về?</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition"
+                           :class="ht==='tai_ban' ? 'border-[#52613B] bg-[#E8F0DD] text-[#3f5325]' : 'border-[#522C25]/15 bg-white text-[#522C25]'">
+                        <input type="radio" name="hinh_thuc" value="tai_ban" x-model="ht" class="hidden">
+                        🍵 Uống tại bàn
+                    </label>
+                    <label class="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition"
+                           :class="ht==='mang_ve' ? 'border-[#9a3412] bg-[#FFE3D6] text-[#9a3412]' : 'border-[#522C25]/15 bg-white text-[#522C25]'">
+                        <input type="radio" name="hinh_thuc" value="mang_ve" x-model="ht" class="hidden">
+                        🥤 Mang về (cốc nhựa)
+                    </label>
+                </div>
+            </div>
             <button class="am-headline w-full rounded-full bg-[#E82C2A] py-3.5 text-sm font-semibold text-white transition active:scale-[0.98]">
                 Gửi đơn cho quán
             </button>

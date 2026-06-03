@@ -12,7 +12,7 @@ class Order extends Model
     protected $keyType    = 'string';
     public $timestamps    = false;
 
-    protected $fillable = ['ma_order','ma_ban','ma_kh','ten_khach','sdt_khach','ma_chi_nhanh','trang_thai','ngay_order','gio_order','ghi_chu','thoi_gian_xac_nhan','thoi_gian_phuc_vu','thoi_gian_thanh_toan'];
+    protected $fillable = ['ma_order','ma_ban','ma_kh','ten_khach','sdt_khach','ma_chi_nhanh','trang_thai','ngay_order','gio_order','ghi_chu','hinh_thuc','thoi_gian_xac_nhan','thoi_gian_phuc_vu','thoi_gian_thanh_toan'];
 
     protected $casts = [
         'ngay_order'          => 'date',
@@ -26,6 +26,18 @@ class Order extends Model
     public function getCustomerNameAttribute(): ?string
     {
         return $this->khachHang?->ten_kh ?: $this->ten_khach;
+    }
+
+    /** Có đóng cốc nhựa / mang đi không. */
+    public function getDungCocNhuaAttribute(): bool
+    {
+        return $this->hinh_thuc === 'mang_ve';
+    }
+
+    /** Nhãn hình thức phục vụ. */
+    public function getHinhThucLabelAttribute(): string
+    {
+        return $this->hinh_thuc === 'mang_ve' ? 'Mang về' : 'Tại bàn';
     }
 
     public function ban()          { return $this->belongsTo(Ban::class, 'ma_ban', 'ma_ban'); }

@@ -17,7 +17,12 @@
             <p class="mt-1 text-xl font-semibold text-[#1A1A1A]">{{ $fmt($order->gio_order) }}</p>
             <p class="mt-1 font-mono text-xs text-[#522C25]/60">{{ $order->ma_order }}</p>
         </div>
-        <x-order-status-badge :status="$order->trang_thai" />
+        <div class="flex flex-col items-end gap-1.5">
+            <x-order-status-badge :status="$order->trang_thai" />
+            <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $order->dung_coc_nhua ? 'bg-[#FFE3D6] text-[#9a3412]' : 'bg-[#E8F0DD] text-[#3f5325]' }}">
+                {{ $order->dung_coc_nhua ? '🥤 Mang về' : '🍵 Tại bàn' }}
+            </span>
+        </div>
     </div>
 
     <div class="relative z-10 space-y-1 text-sm text-[#522C25]/70">

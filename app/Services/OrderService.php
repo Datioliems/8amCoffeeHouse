@@ -14,9 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 class OrderService
 {
-    public function createOrder(string $maBan, string $tenKh, ?string $sdtKh, string $maChiNhanh): array
+    public function createOrder(string $maBan, string $tenKh, ?string $sdtKh, string $maChiNhanh, string $hinhThuc = 'tai_ban'): array
     {
-        return DB::transaction(function () use ($maBan, $tenKh, $sdtKh, $maChiNhanh) {
+        return DB::transaction(function () use ($maBan, $tenKh, $sdtKh, $maChiNhanh, $hinhThuc) {
             // Chưa tạo KHACH_HANG ở bước này — chỉ lưu tạm tên/SĐT trên đơn.
             // Khách chỉ được lưu vào danh sách khi đã có giao dịch (thanh toán).
             $maOrder = $this->generateUniqueOrderId();
@@ -29,6 +29,7 @@ class OrderService
                 'sdt_khach'    => $sdtKh,
                 'ma_chi_nhanh' => $maChiNhanh,
                 'trang_thai'   => 'dang_chon',
+                'hinh_thuc'    => $hinhThuc === 'mang_ve' ? 'mang_ve' : 'tai_ban',
                 'ngay_order'   => now()->toDateString(),
                 'gio_order'    => now()->toTimeString(),
             ]);
@@ -106,33 +107,13 @@ class OrderService
                 'sdt_khach' => $sdtKh,
                 'ma_chi_nhanh' => $maChiNhanh,
                 'trang_thai' => 'cho_xac_nhan',
+                'hinh_thuc' => 'mang_ve',
                 'ngay_order' => now()->toDateString(),
                 'gio_order' => now()->toTimeString(),
                 'ghi_chu' => 'Đơn mang về',
             ]);
 
-            foreach ($items as $item) {
-                $quantity = (int) ($item['so_luong'] ?? 0);
-                if ($quantity <= 0 || empty($item['ma_mon'])) {
-                    continue;
-                }
-
-                $mon = Mon::where('ma_mon', $item['ma_mon'])
-                    ->where('trang_thai', 'active')
-                    ->firstOrFail();
-
-                $chiTiet = ChiTietOrder::create([
-                    'ma_order' => $maOrder,
-                    'ma_mon' => $mon->ma_mon,
-                    'so_luong' => $quantity,
-                    'don_gia_tai_thoi_diem' => $mon->don_gia,
-                    'ghi_chu' => $item['ghi_chu'] ?? null,
-                ]);
-
-                if (!empty($item['options'])) {
-                    $this->syncOrderOptions($chiTiet->id, $maOrder, $mon->ma_mon, $item['options']);
-                }
-            }
+            $this->attachItems($maOrder, $items);
 
             $this->log($maOrder, 'tao_don_mang_ve', null, 'cho_xac_nhan', 'Nhan vien tao don mua mang ve.', [
                 'so_dong_mon' => count($items),
@@ -142,16 +123,86 @@ class OrderService
         });
     }
 
-    public function submitByCustomer(string $maOrder): void
+    /**
+     * Nhân viên tạo đơn ĐẶT TẠI BÀN (dine-in) cho một bàn cụ thể.
+     * $hinhThuc: 'tai_ban' (mặc định) hoặc 'mang_ve' (đóng cốc nhựa).
+     */
+    public function createDineInOrder(string $maBan, string $maChiNhanh, array $items, string $hinhThuc = 'tai_ban', ?string $tenKh = null, ?string $sdtKh = null): string
     {
-        DB::transaction(function () use ($maOrder) {
+        return DB::transaction(function () use ($maBan, $maChiNhanh, $items, $hinhThuc, $tenKh, $sdtKh) {
+            $maOrder = $this->generateUniqueOrderId();
+
+            Order::create([
+                'ma_order'     => $maOrder,
+                'ma_ban'       => $maBan,
+                'ma_kh'        => null,
+                'ten_khach'    => $tenKh ?: null,
+                'sdt_khach'    => $sdtKh,
+                'ma_chi_nhanh' => $maChiNhanh,
+                'trang_thai'   => 'cho_xac_nhan',
+                'hinh_thuc'    => $hinhThuc === 'mang_ve' ? 'mang_ve' : 'tai_ban',
+                'ngay_order'   => now()->toDateString(),
+                'gio_order'    => now()->toTimeString(),
+            ]);
+
+            $this->attachItems($maOrder, $items);
+
+            // Đánh dấu bàn có khách.
+            \App\Models\Ban::where('ma_ban', $maBan)->update(['trang_thai' => 'co_khach']);
+
+            $this->log($maOrder, 'tao_don_tai_ban', null, 'cho_xac_nhan', 'Nhan vien tao don dat tai ban.', [
+                'ma_ban'     => $maBan,
+                'hinh_thuc'  => $hinhThuc,
+                'so_dong_mon' => count($items),
+            ]);
+
+            return $maOrder;
+        });
+    }
+
+    /** Thêm danh sách dòng món vào một đơn (dùng chung cho takeaway / dine-in). */
+    private function attachItems(string $maOrder, array $items): void
+    {
+        foreach ($items as $item) {
+            $quantity = (int) ($item['so_luong'] ?? 0);
+            if ($quantity <= 0 || empty($item['ma_mon'])) {
+                continue;
+            }
+
+            $mon = Mon::where('ma_mon', $item['ma_mon'])
+                ->where('trang_thai', 'active')
+                ->firstOrFail();
+
+            $chiTiet = ChiTietOrder::create([
+                'ma_order'              => $maOrder,
+                'ma_mon'                => $mon->ma_mon,
+                'so_luong'              => $quantity,
+                'don_gia_tai_thoi_diem' => $mon->don_gia,
+                'ghi_chu'               => $item['ghi_chu'] ?? null,
+            ]);
+
+            if (!empty($item['options'])) {
+                $this->syncOrderOptions($chiTiet->id, $maOrder, $mon->ma_mon, $item['options']);
+            }
+        }
+    }
+
+    public function submitByCustomer(string $maOrder, ?string $hinhThuc = null): void
+    {
+        DB::transaction(function () use ($maOrder, $hinhThuc) {
             $order = Order::where('ma_order', $maOrder)
                           ->where('trang_thai', 'dang_chon')
                           ->lockForUpdate()
                           ->firstOrFail();
 
-            $order->update(['trang_thai' => 'cho_xac_nhan']);
-            $this->log($maOrder, 'khach_gui_don', 'dang_chon', 'cho_xac_nhan', 'Khach hang gui don cho quan.');
+            $changes = ['trang_thai' => 'cho_xac_nhan'];
+            if ($hinhThuc !== null) {
+                $changes['hinh_thuc'] = $hinhThuc === 'mang_ve' ? 'mang_ve' : 'tai_ban';
+            }
+            $order->update($changes);
+            $this->log($maOrder, 'khach_gui_don', 'dang_chon', 'cho_xac_nhan', 'Khach hang gui don cho quan.', [
+                'hinh_thuc' => $changes['hinh_thuc'] ?? $order->hinh_thuc,
+            ]);
         });
     }
 
@@ -329,6 +380,7 @@ class OrderService
                 'ma_kh'        => $orderGoc->ma_kh,
                 'ma_chi_nhanh' => $orderGoc->ma_chi_nhanh,
                 'trang_thai'   => $orderGoc->trang_thai,
+                'hinh_thuc'    => $orderGoc->hinh_thuc,
                 'ngay_order'   => now()->toDateString(),
                 'gio_order'    => now()->toTimeString(),
             ]);
@@ -405,6 +457,7 @@ class OrderService
                 'sdt_khach'    => $orderGoc->sdt_khach,
                 'ma_chi_nhanh' => $orderGoc->ma_chi_nhanh,
                 'trang_thai'   => $orderGoc->trang_thai,
+                'hinh_thuc'    => $orderGoc->hinh_thuc,
                 'ngay_order'   => now()->toDateString(),
                 'gio_order'    => now()->toTimeString(),
             ]);

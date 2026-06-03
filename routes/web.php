@@ -49,10 +49,17 @@ Route::get( '/otp',        [AuthController::class, 'showOtp']  )->name('otp.show
 Route::post('/otp',        [AuthController::class, 'verifyOtp'])->name('otp.verify');
 Route::post('/otp/resend', [AuthController::class, 'resendOtp'])->name('otp.resend');
 
+// ── VNPAY CALLBACK (public — cổng/khách gọi về, không qua auth.staff) ──
+Route::get('/payment/vnpay/return', [PaymentController::class, 'vnpayReturn'])->name('payment.vnpay.return');
+Route::get('/payment/vnpay/ipn',    [PaymentController::class, 'vnpayIpn']   )->name('payment.vnpay.ipn');
+
 // ── STAFF ─────────────────────────────────────────────────────
 Route::middleware(['auth.staff'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // ── PHÂN TÍCH AI (dự báo doanh thu + gợi ý món) ──────────
+    Route::middleware('role:superadmin,admin')->get('/phan-tich', [\App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');
 
     // ── SƠ ĐỒ BÀN 3D (Three.js) ──────────────────────────────
     Route::get('/floorplan',                    [BanController::class, 'floorplan'] )->name('floorplan');
@@ -88,6 +95,8 @@ Route::middleware(['auth.staff'])->group(function () {
         Route::get('/api/list',              [OrderController::class, 'apiList']     )->name('api.list');
         Route::get('/takeaway/create',       [OrderController::class, 'createTakeaway'])->name('takeaway.create');
         Route::post('/takeaway',             [OrderController::class, 'storeTakeaway'])->name('takeaway.store');
+        Route::get('/table/{ma_ban}',        [OrderController::class, 'tablePanel']  )->name('table');
+        Route::post('/table/{ma_ban}',       [OrderController::class, 'storeTable']  )->name('table.store');
         Route::get('/{ma_order}',            [OrderController::class, 'show']        )->name('show');
         Route::put('/{ma_order}/confirm',    [OrderController::class, 'confirm']     )->name('confirm');
         Route::put('/{ma_order}/status',     [OrderController::class, 'updateStatus'])->name('status');
@@ -96,8 +105,9 @@ Route::middleware(['auth.staff'])->group(function () {
     });
 
     Route::prefix('payment')->name('payment.')->group(function () {
-        Route::get( '/{ma_order}', [PaymentController::class, 'show']   )->name('show');
-        Route::post('/{ma_order}', [PaymentController::class, 'process'])->name('process');
+        Route::get( '/{ma_order}',       [PaymentController::class, 'show']    )->name('show');
+        Route::post('/{ma_order}',       [PaymentController::class, 'process'] )->name('process');
+        Route::post('/{ma_order}/vnpay', [PaymentController::class, 'payVnpay'])->name('vnpay.create');
     });
 
     // ── HÓA ĐƠN IN (bán hàng / nhập kho) ─────────────────────

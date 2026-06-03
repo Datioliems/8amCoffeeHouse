@@ -44,6 +44,14 @@
             </span>
             Tổng quan
         </a>
+        @if(in_array(session('chuc_vu'), ['superadmin', 'admin']))
+        <a href="{{ route('analytics.index') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('analytics.*') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('analytics.*') ? 'bg-white/15' : 'bg-white' }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 3-4 4 3 5-7"/></svg>
+            </span>
+            Phân tích AI
+        </a>
+        @endif
         <a href="{{ route('floorplan') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ request()->routeIs('floorplan') ? 'bg-[#1A1A1A] text-white' : 'text-[#522C25] hover:bg-[#F2F2F2]' }}">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ request()->routeIs('floorplan') ? 'bg-white/15' : 'bg-white' }}">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="m3 12 9 4 9-4"/><path d="m3 17 9 4 9-4"/></svg>
@@ -137,6 +145,9 @@
 
     <div x-show="mobileNav" @click.outside="mobileNav = false" class="fixed left-4 right-4 top-20 z-50 rounded-2xl bg-white p-3 shadow-xl ring-1 ring-[#522C25]/10 lg:hidden" style="display: none;">
         <a href="{{ route('dashboard') }}" class="block rounded-xl px-3 py-2 text-sm">Tổng quan</a>
+        @if(in_array(session('chuc_vu'), ['superadmin', 'admin']))
+            <a href="{{ route('analytics.index') }}" class="block rounded-xl px-3 py-2 text-sm">Phân tích AI</a>
+        @endif
         <a href="{{ route('orders.index') }}" class="block rounded-xl px-3 py-2 text-sm">Đơn hàng</a>
         <a href="{{ route('inventory.index') }}" class="block rounded-xl px-3 py-2 text-sm">Kho hàng</a>
         @if(in_array(session('chuc_vu'), ['superadmin', 'admin']))

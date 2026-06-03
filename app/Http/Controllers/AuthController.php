@@ -53,7 +53,8 @@ class AuthController extends Controller
 
         // ── (3) Đang bị khoá tạm thời? ─────────────────────────────────
         if ($taiKhoan && $taiKhoan->dangBiKhoa()) {
-            $phut = max(1, (int) ceil(now()->diffInSeconds($taiKhoan->khoa_den, false) / 60));
+            $giay = max(0, $taiKhoan->khoa_den->getTimestamp() - now()->getTimestamp());
+            $phut = max(1, (int) ceil($giay / 60));
             $this->log('tai_khoan_bi_khoa', $request, [
                 'ten_tk' => $tenTk, 'ma_tai_khoan' => $taiKhoan->ma_tai_khoan, 'ma_nv' => $taiKhoan->ma_nv,
                 'chi_tiet' => 'Dang nhap khi tai khoan dang bi khoa',
@@ -256,9 +257,7 @@ class AuthController extends Controller
 
         $tk->update(['lan_dang_nhap_cuoi' => now(), 'ip_dang_nhap_cuoi' => $request->ip()]);
 
-        if (!$alreadyLogged) {
-            $this->log('dang_nhap', $request, $this->ctx($tk, 'Dang nhap thanh cong'), true);
-        }
+        $this->log('dang_nhap', $request, $this->ctx($tk, $alreadyLogged ? 'Dang nhap (qua 2FA)' : 'Dang nhap thanh cong'), true);
 
         $intendedUrl = $request->session()->pull('url.intended');
         $safeUrl = ($intendedUrl && !str_ends_with($intendedUrl, '.html'))

@@ -30,7 +30,79 @@ class OrderController extends Controller
 
         $counts = $this->orderService->countByStatus($maChiNhanh);
 
-        return view('staff.order-list', compact('orders', 'counts', 'status'));
+        // Sơ đồ bàn nhúng đầu trang: bàn + số đơn đang mở từng bàn.
+        $bans = \App\Models\Ban::where('ma_chi_nhanh', $maChiNhanh)->orderBy('so_ban')->get();
+        $orderCounts = \App\Models\Order::where('ma_chi_nhanh', $maChiNhanh)
+            ->whereIn('trang_thai', ['cho_xac_nhan','da_xac_nhan','dang_pha_che','da_phuc_vu'])
+            ->selectRaw('ma_ban, COUNT(*) as cnt')
+            ->groupBy('ma_ban')
+            ->pluck('cnt', 'ma_ban');
+
+        return view('staff.order-list', compact('orders', 'counts', 'status', 'bans', 'orderCounts'));
+    }
+
+    /** Trang một bàn: đơn đang mở tại bàn + form đặt món tại bàn (dine-in). */
+    public function tablePanel(string $maBan)
+    {
+        $maChiNhanh = (string) session('ma_chi_nhanh', '');
+        $ban = \App\Models\Ban::where('ma_ban', $maBan)
+            ->where('ma_chi_nhanh', $maChiNhanh)
+            ->firstOrFail();
+
+        $activeOrders = Order::with(['chiTietOrders.mon', 'chiTietOrders.options'])
+            ->where('ma_ban', $maBan)
+            ->whereIn('trang_thai', ['dang_chon','cho_xac_nhan','da_xac_nhan','dang_pha_che','da_phuc_vu'])
+            ->orderByDesc('gio_order')
+            ->get();
+
+        $mons = Mon::with('danhMuc')
+            ->where('trang_thai', 'active')
+            ->orderBy('ma_danh_muc')->orderBy('ten_mon')
+            ->get();
+        $toppings = \App\Models\Topping::where('trang_thai', 'active')->orderBy('ten_topping')->get();
+
+        return view('staff.order-table', compact('ban', 'activeOrders', 'mons', 'toppings'));
+    }
+
+    /** Nhân viên tạo đơn đặt tại bàn. */
+    public function storeTable(Request $request, string $maBan)
+    {
+        $maChiNhanh = (string) session('ma_chi_nhanh', '');
+        $ban = \App\Models\Ban::where('ma_ban', $maBan)
+            ->where('ma_chi_nhanh', $maChiNhanh)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'ten_kh'     => 'nullable|string|max:100',
+            'hinh_thuc'  => 'required|in:tai_ban,mang_ve',
+            'items' => 'required|array',
+            'items.*.ma_mon' => 'nullable|exists:MON,ma_mon',
+            'items.*.so_luong' => 'nullable|integer|min:0|max:99',
+            'items.*.ghi_chu' => 'nullable|string|max:200',
+            'items.*.options' => 'nullable|array|max:20',
+            'items.*.options.*.type'  => 'nullable|string|max:30',
+            'items.*.options.*.value' => 'nullable|string|max:100',
+            'items.*.options.*.price' => 'nullable|integer|min:0',
+        ]);
+
+        $items = collect($validated['items'])
+            ->filter(fn($item) => !empty($item['ma_mon']) && (int) ($item['so_luong'] ?? 0) > 0)
+            ->values()->all();
+
+        if (empty($items)) {
+            return back()->withInput()->withErrors(['items' => 'Vui lòng chọn ít nhất một món.']);
+        }
+
+        $maOrder = $this->orderService->createDineInOrder(
+            maBan:      $maBan,
+            maChiNhanh: $maChiNhanh,
+            items:      $items,
+            hinhThuc:   $validated['hinh_thuc'],
+            tenKh:      $validated['ten_kh'] ?? null,
+        );
+
+        return redirect()->route('orders.show', $maOrder)
+            ->with('success', 'Đã tạo đơn cho bàn ' . $ban->so_ban . '. Xác nhận để chuyển pha chế.');
     }
 
     /** JSON polling cho order board — gọi bằng fetch mỗi 10s */
@@ -274,7 +346,7 @@ class OrderController extends Controller
         return back();
     }
 
-    public function showCart(string $maOrder)
+    public function showCart(string $maOrder, \App\Services\AnalyticsService $analytics)
     {
         $this->assertCustomerOwnsOrder($maOrder);
 
@@ -286,16 +358,22 @@ class OrderController extends Controller
             return redirect()->route('customer.status', $maOrder);
         }
 
-        return view('customer.checkout', compact('order'));
+        // Gợi ý món mua kèm (AI market-basket) theo giỏ hiện tại.
+        $cartMons = $order->chiTietOrders->pluck('ma_mon')->all();
+        $suggestions = $analytics->recommendForItems($cartMons, $order->ma_chi_nhanh, 4);
+
+        return view('customer.checkout', compact('order', 'suggestions'));
     }
 
-    public function confirmByCustomer(string $maOrder)
+    public function confirmByCustomer(Request $request, string $maOrder)
     {
         $this->assertCustomerOwnsOrder($maOrder);
 
+        $request->validate(['hinh_thuc' => 'nullable|in:tai_ban,mang_ve']);
+
         $order = Order::where('ma_order', $maOrder)->where('trang_thai', 'dang_chon')->first();
         if (!$order) return redirect()->route('customer.status', $maOrder);
-        $this->orderService->submitByCustomer($maOrder);
+        $this->orderService->submitByCustomer($maOrder, $request->input('hinh_thuc'));
         return redirect()->route('customer.status', $maOrder)
             ->with('info', 'Đơn hàng đã được gửi. Vui lòng chờ nhân viên xác nhận.');
     }

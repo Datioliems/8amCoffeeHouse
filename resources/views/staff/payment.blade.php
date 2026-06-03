@@ -20,6 +20,9 @@
                     <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#8B5A2B]/70">Thanh toán</p>
                     <h2 class="mt-1 text-lg font-semibold text-[#1A1A1A]">Đơn #{{ $order->ma_order }}</h2>
                     <p class="mt-1 text-sm text-[#522C25]/60">{{ $order->ban ? 'Bàn ' . $order->ban->so_ban : 'Mang về' }} · {{ $order->chiTietOrders->sum('so_luong') }} món</p>
+                    <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $order->dung_coc_nhua ? 'bg-[#FFE3D6] text-[#9a3412]' : 'bg-[#E8F0DD] text-[#3f5325]' }}">
+                        {{ $order->dung_coc_nhua ? '🥤 Mang về (cốc nhựa)' : '🍵 Uống tại bàn' }}
+                    </span>
                 </div>
                 <div class="rounded-xl bg-[#FFF7E8] px-4 py-3 text-left sm:text-right">
                     <p class="text-xs font-medium text-[#8B5A2B]">Tổng cần thu</p>
@@ -115,6 +118,16 @@
                 <button type="submit" class="mt-4 w-full rounded-xl bg-[#8B5A2B] py-3 text-sm font-semibold text-white shadow-lg shadow-[#8B5A2B]/20 transition hover:bg-[#6F4621]">
                     Xác nhận thanh toán
                 </button>
+
+                @if($vnpayReady)
+                {{-- Thanh toán online thật qua cổng VNPay (sandbox). Dùng cùng ô chiết khấu ở trên. --}}
+                <button type="submit" formaction="{{ route('payment.vnpay.create', $order->ma_order) }}" formmethod="POST"
+                        class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-[#0b4ba3]/20 bg-[#0b4ba3] py-3 text-sm font-semibold text-white transition hover:bg-[#093d85]">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                    Thanh toán online qua VNPay
+                </button>
+                <p class="mt-1 text-center text-[11px] text-[#522C25]/45">Chuyển hướng sang cổng VNPay sandbox để thanh toán an toàn.</p>
+                @endif
             </form>
             @endif
         </section>

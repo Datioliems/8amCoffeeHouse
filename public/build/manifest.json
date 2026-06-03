@@ -3,10 +3,23 @@
     "file": "assets/OrbitControls-DTVQfa6o.js",
     "name": "OrbitControls"
   },
+  "_chart-Cj2VjqGg.js": {
+    "file": "assets/chart-Cj2VjqGg.js",
+    "name": "chart"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-BwUbwriP.css",
+    "file": "assets/app-ux1E4EQ8.css",
     "src": "resources/css/app.css",
     "isEntry": true
+  },
+  "resources/js/analytics.js": {
+    "file": "assets/analytics-Bg0il7ey.js",
+    "name": "analytics",
+    "src": "resources/js/analytics.js",
+    "isEntry": true,
+    "imports": [
+      "_chart-Cj2VjqGg.js"
+    ]
   },
   "resources/js/app.js": {
     "file": "assets/app-nGCtfjxn.js",
@@ -15,10 +28,13 @@
     "isEntry": true
   },
   "resources/js/dashboard.js": {
-    "file": "assets/dashboard-CLy1ogq9.js",
+    "file": "assets/dashboard-BHV2tbFP.js",
     "name": "dashboard",
     "src": "resources/js/dashboard.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_chart-Cj2VjqGg.js"
+    ]
   },
   "resources/js/floorplan.js": {
     "file": "assets/floorplan-BFlP90FH.js",
