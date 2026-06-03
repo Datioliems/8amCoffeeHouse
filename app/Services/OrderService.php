@@ -71,11 +71,12 @@ class OrderService
                 ]);
             }
 
+            // Xác nhận xong nhảy thẳng sang "đang pha chế" (bỏ bước trung gian "đã xác nhận").
             $order->update([
-                'trang_thai'         => 'da_xac_nhan',
+                'trang_thai'         => 'dang_pha_che',
                 'thoi_gian_xac_nhan' => now(),
             ]);
-            $this->log($maOrder, 'xac_nhan_don', 'cho_xac_nhan', 'da_xac_nhan', 'Nhan vien xac nhan don hang.', maNv: session('ma_nv'));
+            $this->log($maOrder, 'xac_nhan_don', 'cho_xac_nhan', 'dang_pha_che', 'Nhan vien xac nhan don -> dang pha che.', maNv: session('ma_nv'));
         });
     }
 

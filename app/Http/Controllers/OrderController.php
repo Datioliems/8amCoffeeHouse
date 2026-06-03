@@ -148,12 +148,12 @@ class OrderController extends Controller
                 ->with('success', 'Đã lưu đơn bàn ' . $ban->so_ban . '. Tiến hành thanh toán.');
         }
 
-        // Nút "Xác nhận" → đưa về ĐÃ XÁC NHẬN (nếu đang chờ) rồi về order board.
+        // Nút "Xác nhận" → nhảy thẳng ĐANG PHA CHẾ (bỏ bước "đã xác nhận") rồi về order board.
         if (Order::where('ma_order', $maOrder)->value('trang_thai') === 'cho_xac_nhan') {
-            $this->orderService->updateStatus($maOrder, 'da_xac_nhan');
+            $this->orderService->updateStatus($maOrder, 'dang_pha_che');
         }
         return redirect()->route('orders.index')
-            ->with('success', ($isNew ? 'Đã tạo và xác nhận' : 'Đã cập nhật') . ' đơn cho bàn ' . $ban->so_ban . '.');
+            ->with('success', ($isNew ? 'Đã tạo & chuyển pha chế' : 'Đã cập nhật') . ' đơn cho bàn ' . $ban->so_ban . '.');
     }
 
     /** JSON polling cho order board — gọi bằng fetch mỗi 10s */

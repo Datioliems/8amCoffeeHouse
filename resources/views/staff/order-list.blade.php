@@ -5,7 +5,6 @@
 @php
     $statusTabs = [
         'cho_xac_nhan' => 'Chờ xác nhận',
-        'da_xac_nhan' => 'Đã xác nhận',
         'dang_pha_che' => 'Đang pha chế',
         'da_phuc_vu' => 'Đã phục vụ',
         'hoan_thanh' => 'Đã thanh toán',
