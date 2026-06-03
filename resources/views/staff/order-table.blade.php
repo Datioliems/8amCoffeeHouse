@@ -78,7 +78,9 @@
                             <div class="relative aspect-[4/3] w-full overflow-hidden bg-[#F2F2F2]">
                                 @if($mon->image_url)<img src="{{ $mon->image_url }}" alt="{{ $mon->ten_mon }}" class="h-full w-full object-cover" loading="lazy">@endif
                                 @if($mon->model_3d_url)
-                                <button type="button" onclick="window.viewMon3D(@json($mon->model_3d_url), @json($mon->ten_mon))"
+                                <button type="button"
+                                        data-model-url="{{ $mon->model_3d_url }}" data-model-name="{{ $mon->ten_mon }}"
+                                        onclick="window.viewMon3D(this.dataset.modelUrl, this.dataset.modelName)"
                                         class="absolute right-2 top-2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur hover:bg-black/80">3D</button>
                                 @endif
                             </div>
