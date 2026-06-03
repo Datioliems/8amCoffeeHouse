@@ -106,4 +106,34 @@
     <div class="rounded-3xl border border-dashed border-[#522C25]/20 bg-white py-16 text-center text-sm text-[#522C25]/60">Thực đơn đang được cập nhật.</div>
 @endforelse
 </div>
+
+{{-- ── POPUP HƯỚNG DẪN DÙNG SƠ ĐỒ 3D ĐỂ CHỌN/ĐỔI BÀN ────────── --}}
+<div x-data="{ open: false }" x-init="if(!localStorage.getItem('sr_guide_seen')){ setTimeout(() => open = true, 800) }">
+    {{-- Nút trợ giúp nổi --}}
+    <button @click="open = true"
+            class="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#1A1A1A] text-lg font-bold text-white shadow-lg ring-2 ring-white/70"
+            title="Hướng dẫn dùng sơ đồ 3D">?</button>
+
+    <div x-show="open" x-cloak x-transition.opacity @click.self="open=false"
+         class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-sm rounded-[1.75rem] bg-white p-6 am-shadow" x-transition>
+            <div class="mb-3 flex items-center justify-between">
+                <h3 class="am-display text-2xl text-[#1A1A1A]">Chọn bàn bằng sơ đồ 3D</h3>
+                <button @click="open=false" class="flex h-8 w-8 items-center justify-center rounded-full bg-[#F2F2F2] text-xl text-[#522C25]">&times;</button>
+            </div>
+            <ul class="space-y-3 text-sm leading-6 text-[#522C25]/80">
+                <li class="flex gap-3"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E82C2A] text-xs font-bold text-white">1</span> <span><strong>Kéo</strong> để xoay quán · <strong>cuộn</strong> (hoặc chạm 2 ngón) để phóng to.</span></li>
+                <li class="flex gap-3"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E82C2A] text-xs font-bold text-white">2</span> <span><strong>Chạm vào ghim bàn</strong> để xem số ghế, ảnh & trạng thái bàn.</span></li>
+                <li class="flex gap-3"><span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E82C2A] text-xs font-bold text-white">3</span> <span>Chọn một <strong>bàn trống</strong> để chuyển tới bàn đó.</span></li>
+            </ul>
+            <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#522C25]/60">
+                <span><span class="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-[#CADCAC]"></span>Trống</span>
+                <span><span class="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-[#E82C2A]"></span>Có khách</span>
+                <span><span class="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-[#E0A800]"></span>Đặt trước</span>
+            </div>
+            <button @click="open=false; localStorage.setItem('sr_guide_seen','1')"
+                    class="am-headline mt-5 w-full rounded-full bg-[#E82C2A] py-3 text-sm font-semibold text-white">Đã hiểu</button>
+        </div>
+    </div>
+</div>
 @endsection
